@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Identity and Access Management, A Beginner's Lesson</title>
+<style>
+  :root{
+    --noche:#1A0A2E;
+    --noche-2:#241338;
+    --panel:#2A1748;
+    --panel-2:#33205A;
+    --amatista:#3D1F7A;
+    --fuego:#D4523A;
+    --oro:#E8C87A;
+    --arena:#F5F0E8;
+    --selva:#2A7A5E;
+    --selva-bright:#3FA07A;
+    --ink:#F5F0E8;
+    --muted:#B9A9D4;
+    --line:rgba(232,200,122,0.18);
+    --radius:14px;
+    --shadow:0 18px 50px rgba(0,0,0,0.45);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,Menlo,Consolas,"SF Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--noche);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 500px at 88% -8%, rgba(61,31,122,0.55), transparent 60%),
+      radial-gradient(700px 600px at -5% 100%, rgba(42,122,94,0.18), transparent 55%);
+  }
+  /* layout */
+  .app{display:flex;min-height:100vh;position:relative;z-index:1}
+  .sidebar{
+    width:300px;flex:0 0 300px;background:linear-gradient(180deg,var(--noche-2),var(--noche));
+    border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow-y:auto;
+    padding:22px 16px 40px;
+  }
+  .brand{display:flex;align-items:center;gap:11px;margin:4px 6px 18px}
+  .brand .key{width:34px;height:34px;flex:0 0 34px}
+  .brand h1{font-family:var(--serif);font-size:17px;margin:0;font-weight:700;letter-spacing:.2px}
+  .brand p{margin:1px 0 0;font-size:11px;color:var(--oro);letter-spacing:.6px;text-transform:uppercase}
+  .prog-wrap{margin:0 6px 20px}
+  .prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.3px}
+  .prog-bar{height:7px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden}
+  .prog-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--oro),var(--fuego));transition:width .5s ease}
+  .mod{margin-bottom:6px}
+  .mod-head{
+    display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;cursor:pointer;
+    font-size:12.5px;font-weight:600;color:var(--muted);user-select:none;transition:background .15s,color .15s;
+  }
+  .mod-head:hover{background:rgba(255,255,255,0.05);color:var(--ink)}
+  .mod-head .num{
+    width:22px;height:22px;flex:0 0 22px;border-radius:7px;background:var(--amatista);
+    display:grid;place-items:center;font-size:11px;color:var(--oro);font-family:var(--mono)
+  }
+  .mod-head.active{color:var(--oro)}
+  .mod-head .chev{margin-left:auto;transition:transform .2s;font-size:10px;opacity:.7}
+  .mod.open .chev{transform:rotate(90deg)}
+  .lessons{display:none;padding:2px 0 6px 12px}
+  .mod.open .lessons{display:block}
+  .lesson-link{
+    display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer;
+    font-size:12.5px;color:var(--muted);transition:background .15s,color .15s;border-left:2px solid transparent;
+  }
+  .lesson-link:hover{background:rgba(255,255,255,0.04);color:var(--ink)}
+  .lesson-link.current{background:rgba(232,200,122,0.10);color:var(--ink);border-left-color:var(--oro)}
+  .lesson-link .dot{
+    width:15px;height:15px;flex:0 0 15px;border-radius:50%;border:1.5px solid var(--muted);
+    display:grid;place-items:center;font-size:9px;transition:.2s
+  }
+  .lesson-link.done .dot{background:var(--selva);border-color:var(--selva);color:#fff}
+  .lesson-link.current .dot{border-color:var(--oro)}
+
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{
+    position:sticky;top:0;z-index:5;backdrop-filter:blur(10px);
+    background:rgba(26,10,46,0.78);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;padding:12px 26px;
+  }
+  .menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--ink);border-radius:9px;
+    width:40px;height:40px;font-size:18px;cursor:pointer}
+  .crumb{font-size:12px;color:var(--oro);letter-spacing:.4px;text-transform:uppercase;font-weight:600}
+  .topbar .glossbtn{margin-left:auto;background:var(--amatista);border:1px solid var(--line);color:var(--ink);
+    padding:8px 15px;border-radius:9px;font-size:12.5px;cursor:pointer;font-weight:600;transition:.15s}
+  .topbar .glossbtn:hover{background:var(--panel-2)}
+  .content{max-width:860px;margin:0 auto;padding:40px 26px 90px;width:100%}
+
+  .eyebrow{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--fuego);font-weight:700;margin-bottom:10px}
+  h2.title{font-family:var(--serif);font-size:33px;line-height:1.18;margin:0 0 8px;font-weight:700}
+  .lede{font-size:17px;color:var(--muted);margin:0 0 26px;max-width:62ch}
+  h3{font-family:var(--serif);font-size:21px;margin:34px 0 12px;font-weight:700}
+  p{margin:0 0 15px}
+  .content a{color:var(--oro)}
+
+  .card{background:linear-gradient(180deg,var(--panel),var(--noche-2));border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px 22px;margin:18px 0;box-shadow:var(--shadow)}
+
+  .plain{border:1px solid rgba(63,160,122,0.4);background:rgba(42,122,94,0.12);border-radius:var(--radius);
+    padding:16px 18px;margin:18px 0}
+  .plain .tag,.example .tag,.watch .tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
+    letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+  .plain .tag{color:var(--selva-bright)}
+  .plain p:last-child,.example p:last-child,.watch p:last-child{margin-bottom:0}
+
+  .example{border:1px solid rgba(232,200,122,0.4);background:rgba(232,200,122,0.09);border-radius:var(--radius);
+    padding:16px 18px;margin:18px 0}
+  .example .tag{color:var(--oro)}
+
+  .watch{border:1px solid rgba(212,82,58,0.45);background:rgba(212,82,58,0.12);border-radius:var(--radius);
+    padding:16px 18px;margin:18px 0}
+  .watch .tag{color:var(--fuego)}
+
+  .ico{width:15px;height:15px;display:inline-block;vertical-align:-2px}
+
+  ul.clean{list-style:none;padding:0;margin:14px 0}
+  ul.clean li{position:relative;padding:7px 0 7px 26px;border-bottom:1px solid rgba(255,255,255,0.05)}
+  ul.clean li:last-child{border-bottom:none}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:14px;width:8px;height:8px;border-radius:2px;
+    background:var(--oro);transform:rotate(45deg)}
+  ul.clean li b{color:var(--ink)}
+
+  /* comparison table */
+  table.cmp{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;overflow:hidden;border-radius:12px}
+  table.cmp th,table.cmp td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  table.cmp thead th{background:var(--amatista);color:var(--oro);font-size:11.5px;letter-spacing:.5px;text-transform:uppercase}
+  table.cmp tbody tr{background:rgba(255,255,255,0.02)}
+  table.cmp tbody tr:nth-child(even){background:rgba(255,255,255,0.045)}
+  table.cmp td:first-child{color:var(--oro);font-weight:600}
+
+  /* widget shell */
+  .widget{background:var(--noche-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;margin:24px 0;box-shadow:var(--shadow)}
+  .widget-h{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .widget-h .badge{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--noche);
+    background:var(--oro);padding:3px 9px;border-radius:99px}
+  .widget-h h4{margin:0;font-family:var(--serif);font-size:18px}
+  .widget-sub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+
+  .btn{background:var(--oro);color:var(--noche);border:none;padding:10px 17px;border-radius:10px;font-weight:700;
+    font-size:13.5px;cursor:pointer;transition:transform .08s,filter .15s;font-family:var(--sans)}
+  .btn:hover{filter:brightness(1.07)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:rgba(255,255,255,0.06)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,0.03);
+    color:var(--muted);font-size:13px;cursor:pointer;transition:.15s;font-weight:600}
+  .chip:hover{color:var(--ink);border-color:var(--oro)}
+  .chip.on{background:var(--oro);color:var(--noche);border-color:var(--oro)}
+
+  .ctrl-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .ctrl-row .lab{font-size:12px;color:var(--muted);width:118px;flex:0 0 118px;font-weight:600}
+
+  .verdict{border-radius:12px;padding:16px 18px;margin-top:6px;border:1px solid var(--line);
+    display:flex;gap:14px;align-items:flex-start;transition:.25s}
+  .verdict .v-ico{width:42px;height:42px;flex:0 0 42px;border-radius:11px;display:grid;place-items:center;font-size:22px;font-weight:800}
+  .verdict h5{margin:0 0 4px;font-size:16px;font-family:var(--serif)}
+  .verdict p{margin:0;font-size:13.5px;color:var(--muted)}
+  .v-allow{background:rgba(42,122,94,0.16);border-color:rgba(63,160,122,0.5)}
+  .v-allow .v-ico{background:var(--selva);color:#fff}
+  .v-allow h5{color:var(--selva-bright)}
+  .v-step{background:rgba(232,200,122,0.13);border-color:rgba(232,200,122,0.5)}
+  .v-step .v-ico{background:var(--oro);color:var(--noche)}
+  .v-step h5{color:var(--oro)}
+  .v-deny{background:rgba(212,82,58,0.15);border-color:rgba(212,82,58,0.5)}
+  .v-deny .v-ico{background:var(--fuego);color:#fff}
+  .v-deny h5{color:var(--fuego)}
+
+  /* quiz */
+  .quiz-q{margin:18px 0}
+  .quiz-q .qtext{font-weight:600;margin-bottom:11px;font-size:15px}
+  .opt{display:block;width:100%;text-align:left;padding:12px 15px;border-radius:11px;border:1px solid var(--line);
+    background:rgba(255,255,255,0.03);color:var(--ink);font-size:14px;cursor:pointer;margin-bottom:9px;transition:.15s;font-family:var(--sans)}
+  .opt:hover:not(.locked){border-color:var(--oro);background:rgba(255,255,255,0.06)}
+  .opt.correct{background:rgba(42,122,94,0.2);border-color:var(--selva-bright);color:#fff}
+  .opt.wrong{background:rgba(212,82,58,0.2);border-color:var(--fuego)}
+  .opt.locked{cursor:default}
+  .explain{font-size:13px;color:var(--muted);padding:11px 14px;border-left:2px solid var(--oro);
+    background:rgba(232,200,122,0.07);border-radius:0 8px 8px 0;margin-top:4px;display:none}
+  .explain.show{display:block}
+
+  /* footer nav */
+  .pager{display:flex;justify-content:space-between;gap:12px;margin-top:46px;border-top:1px solid var(--line);padding-top:24px}
+  .pager button{flex:1;max-width:340px}
+  .pager .next{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+  .pager .prev{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+  .pager small{font-size:11px;opacity:.7;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+
+  /* glossary modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(10,4,20,0.7);backdrop-filter:blur(4px);z-index:50;
+    display:none;align-items:flex-start;justify-content:center;padding:50px 18px;overflow-y:auto}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--noche-2);border:1px solid var(--line);border-radius:18px;max-width:640px;width:100%;
+    padding:26px 28px;box-shadow:var(--shadow)}
+  .modal h3{margin-top:0}
+  .modal .x{float:right;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1}
+  .gterm{padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.07)}
+  .gterm:last-child{border-bottom:none}
+  .gterm dt{font-weight:700;color:var(--oro);font-size:14.5px;margin-bottom:3px}
+  .gterm dd{margin:0;color:var(--muted);font-size:13.5px}
+
+  /* diagram bits */
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  .complete-card{text-align:center;padding:36px 22px}
+  .complete-card .big{font-size:54px;margin-bottom:6px}
+
+  @media (max-width:880px){
+    .sidebar{position:fixed;left:0;top:0;z-index:40;transform:translateX(-100%);transition:transform .25s;width:290px;flex-basis:290px}
+    .sidebar.open{transform:translateX(0)}
+    .menu-btn{display:grid;place-items:center}
+    .content{padding:28px 18px 80px}
+    h2.title{font-size:27px}
+    .ctrl-row .lab{width:100%;flex-basis:100%}
+    .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:39;display:none}
+    .scrim.show{display:block}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* scenario assessments */
+  .sc-wrap{border-color:rgba(212,82,58,0.32)}
+  .sc-badge{background:var(--fuego);color:#fff}
+  .scenario{border:1px solid var(--line);border-radius:14px;margin:20px 0;overflow:hidden;background:rgba(0,0,0,0.18)}
+  .sc-case{padding:18px 18px 16px;background:linear-gradient(180deg,var(--panel),var(--noche-2));border-bottom:1px solid var(--line)}
+  .sc-num{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--fuego);font-weight:700;margin-bottom:6px}
+  .sc-title{margin:0 0 10px;font-family:var(--serif);font-size:17px;color:var(--ink)}
+  .sc-setup{font-size:14px;color:var(--muted);line-height:1.65}
+  .sc-setup p{margin:0 0 8px}.sc-setup p:last-child{margin-bottom:0}
+  .sc-q{margin-top:14px;font-weight:700;font-size:14.5px;color:var(--oro)}
+  .sc-opts{padding:14px 18px 6px;display:flex;flex-direction:column;gap:8px}
+  .sc-opt{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;padding:12px 14px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;cursor:pointer;transition:.15s}
+  .sc-opt:hover:not(.locked){border-color:var(--oro);background:rgba(255,255,255,0.06)}
+  .sc-let{flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:var(--amatista);color:var(--oro);font-family:var(--mono);font-size:12px;font-weight:700}
+  .sc-ot{flex:1}
+  .sc-opt.locked{cursor:default}
+  .sc-opt.vd-best{border-color:var(--selva-bright);background:rgba(42,122,94,0.16)}
+  .sc-opt.vd-best .sc-let{background:var(--selva-bright);color:#fff}
+  .sc-opt.vd-close{border-color:var(--oro);background:rgba(232,200,122,0.10)}
+  .sc-opt.vd-trap{border-color:var(--fuego);background:rgba(212,82,58,0.13)}
+  .sc-opt.vd-wrong{border-color:rgba(185,169,212,0.4);background:rgba(255,255,255,0.02);opacity:.9}
+  .sc-opt.sc-chosen{box-shadow:0 0 0 2px var(--oro) inset}
+  .sc-vtag{margin-left:auto;align-self:center;flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:99px;white-space:nowrap}
+  .vt-best{background:var(--selva-bright);color:#fff}
+  .vt-close{background:var(--oro);color:var(--noche)}
+  .vt-trap{background:var(--fuego);color:#fff}
+  .vt-wrong{background:rgba(185,169,212,0.25);color:var(--muted)}
+  .sc-reveal{display:none;padding:0 18px 18px}
+  .sc-reveal.show{display:block;animation:scfade .3s ease}
+  @keyframes scfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .sc-analysis{border-top:1px dashed var(--line);padding-top:14px;margin-top:4px}
+  .sc-ah{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .sc-line{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(232,200,122,0.08)}
+  .sc-line:last-of-type{border-bottom:none}
+  .sc-mk{flex:0 0 20px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px}
+  .mk-best{background:var(--selva-bright);color:#fff}
+  .mk-close{background:var(--oro);color:var(--noche)}
+  .mk-trap{background:var(--fuego);color:#fff}
+  .mk-wrong{background:rgba(185,169,212,0.3);color:var(--ink)}
+  .sc-note{font-size:13px;color:var(--muted);line-height:1.6}
+  .sc-note b{color:var(--ink)}
+  .sc-you{color:var(--oro);font-style:normal;font-weight:600;font-size:12px}
+  .sc-line.you-picked{background:rgba(232,200,122,0.05);border-radius:8px;padding-left:8px;padding-right:8px}
+  .sc-take{margin-top:14px;background:linear-gradient(180deg,rgba(61,31,122,0.4),rgba(26,10,46,0.4));border:1px solid var(--line);border-left:3px solid var(--oro);border-radius:0 10px 10px 0;padding:13px 15px;font-size:13.5px;color:var(--ink);line-height:1.6}
+  .sc-take-l{display:block;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--oro);font-weight:700;margin-bottom:5px}
+
+
+  /* illustrated scenes + lighter content blocks */
+  .scene{margin:8px 0 22px;background:linear-gradient(180deg,var(--panel),var(--noche-2));border:1px solid var(--line);border-radius:16px;padding:18px 16px 12px;text-align:center}
+  .scene .art{max-width:560px;margin:0 auto;display:block;height:auto}
+  .scene figcaption{margin:10px auto 2px;max-width:54ch;font-size:13px;color:var(--muted);line-height:1.5}
+  .art text.svg-lbl{font-family:var(--sans);font-size:12px;font-weight:600}
+  .big{font-family:var(--serif);font-size:21px;line-height:1.38;color:var(--ink);margin:18px 0;padding-left:14px;border-left:3px solid var(--oro)}
+  .big b{color:var(--oro)}
+  .aha{display:flex;gap:11px;align-items:flex-start;background:rgba(232,200,122,0.08);border-left:3px solid var(--oro);border-radius:0 12px 12px 0;padding:13px 15px;margin:16px 0;font-size:14.5px;color:var(--ink);line-height:1.55}
+  .aha .ico{width:20px;height:20px;color:var(--oro);flex:0 0 20px;margin-top:1px}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+  .mini{background:var(--noche-2);border:1px solid var(--line);border-radius:13px;padding:13px 15px;font-size:13.5px;color:var(--muted);line-height:1.5}
+  .mini h5{margin:0 0 5px;font-family:var(--serif);font-size:15.5px;color:var(--ink);font-weight:700}
+  .mini.allow{border-color:var(--selva-bright);background:rgba(42,122,94,0.10)}
+  .mini.deny{border-color:var(--fuego);background:rgba(212,82,58,0.10)}
+  @media(max-width:680px){ .twocol,.tiles{grid-template-columns:1fr} .big{font-size:19px} }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg class="key" viewBox="0 0 32 32" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="#E8C87A" stroke-width="2.4"/>
+        <circle cx="11" cy="11" r="2.4" fill="#D4523A"/>
+        <path d="M16 16 L27 27 M23 23 L27 19 M25 25 L29 21" stroke="#E8C87A" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>AI Access, Decoded</h1>
+        <p>Identity &amp; Access for AI</p>
+      </div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>Your progress</span><span id="progPct">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">&#9776;</button>
+      <span class="crumb" id="crumb">Start here</span>
+      <button class="glossbtn" id="glossBtn">Key terms</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- GLOSSARY -->
+<div class="modal-bg" id="glossModal">
+  <div class="modal">
+    <button class="x" id="glossX" aria-label="Close">&times;</button>
+    <h3>Key terms, in plain words</h3>
+    <dl id="glossList"></dl>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ----------------------------------------------------------
+   ICONS (tiny inline svg)
+----------------------------------------------------------- */
+function ic(name){
+  const p = {
+    bulb:'<path d="M9 18h6M10 21h4M12 2a6 6 0 0 0-3.5 10.9c.5.4.5 1 .5 1.6V15h6v-.5c0-.6 0-1.2.5-1.6A6 6 0 0 0 12 2z"/>',
+    map:'<path d="M9 2 3 5v17l6-3 6 3 6-3V2l-6 3-6-3z"/><path d="M9 2v17M15 5v17"/>',
+    warn:'<path d="M12 3 2 20h20L12 3z"/><path d="M12 9v5M12 17h.01"/>'
+  }[name];
+  return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+}
+
+/* ----------------------------------------------------------
+   CONTENT MODEL
+   Each lesson: { id, title, body(html), widget?, quiz? }
+----------------------------------------------------------- */
+
+/* ----------------------------------------------------------
+   ART  (hand-drawn stick-figure + shape illustrations)
+   Linework uses currentColor (set to --ink on dark panels).
+   Props use brand accents. Each scene returns a full <svg>.
+----------------------------------------------------------- */
+const PAL = { oro:'#E8C87A', fuego:'#D4523A', selva:'#3FA07A', selvaDk:'#2A7A5E', amat:'#7E5BC4', amatDk:'#3D1F7A', paper:'#F5F0E8', muted:'#B9A9D4' };
+
+/* ---- cast ---- */
+function figPerson(x,y,s,o){ o=o||{}; const a=o.accent||PAL.oro; const arms=o.arms||'down';
+  const armL = arms==='up' ? 'M20 30 L7 22' : (arms==='out'? 'M20 30 L5 32':'M20 30 L8 40');
+  const armR = arms==='up' ? 'M20 30 L33 22' : (arms==='out'? 'M20 30 L35 32':'M20 30 L32 40');
+  return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="20" cy="13" r="10"/>
+    <path d="M15 14q5 4 10 0" stroke-width="2"/>
+    <circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="24" cy="11" r="1.1" fill="currentColor" stroke="none"/>
+    <path d="M20 23 L20 46"/>
+    <path d="${armL}"/><path d="${armR}"/>
+    <path d="M20 46 L11 66"/><path d="M20 46 L29 66"/>
+    ${o.cap?`<path d="M9 8 q11 -9 22 0" fill="${a}" stroke="${a}"/><path d="M8 8 h24" stroke="${a}"/>`:''}
+  </g>`; }
+
+function figAgent(x,y,s,o){ o=o||{}; const a=o.accent||PAL.amat;
+  return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 4 L20 -2"/><circle cx="20" cy="-3" r="1.8" fill="${a}" stroke="${a}"/>
+    <rect x="8" y="4" width="24" height="19" rx="5" fill="${a}" fill-opacity="0.18"/>
+    <circle cx="15" cy="13" r="1.8" fill="currentColor" stroke="none"/><circle cx="25" cy="13" r="1.8" fill="currentColor" stroke="none"/>
+    <path d="M15 18 h10" stroke-width="2"/>
+    <rect x="11" y="25" width="18" height="20" rx="4"/>
+    <path d="M20 45 L13 64"/><path d="M20 45 L27 64"/>
+    <path d="M8 30 L3 34"/><path d="M32 30 L37 34"/>
+  </g>`; }
+
+function figGuard(x,y,s){ return figPerson(x,y,s,{cap:true,accent:PAL.fuego,arms:'out'}); }
+
+function figServer(x,y,s,o){ o=o||{}; const a=o.accent||PAL.selva;
+  return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="2" width="40" height="46" rx="6" fill="${a}" fill-opacity="0.14"/>
+    <path d="M2 17 h40 M2 32 h40"/>
+    <circle cx="9" cy="9.5" r="1.6" fill="${PAL.selva}" stroke="none"/><circle cx="9" cy="24.5" r="1.6" fill="${PAL.selva}" stroke="none"/><circle cx="9" cy="39.5" r="1.6" fill="${PAL.oro}" stroke="none"/>
+    <path d="M30 9 h7 M30 24 h7 M30 39 h7" stroke-width="2"/>
+  </g>`; }
+
+/* ---- props ---- */
+function key(x,y,s,c){ c=c||PAL.oro; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="${c}"/><path d="M13 11 L30 28"/><path d="M26 24 L23 27"/><path d="M30 28 L27 31"/></g>`; }
+function badge(x,y,s,c){ c=c||PAL.oro; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M14 0 v6" stroke="${c}"/><rect x="2" y="6" width="24" height="30" rx="4" fill="${c}" fill-opacity="0.16"/><circle cx="14" cy="16" r="5"/><path d="M6 28 h16 M8 32 h12" stroke-width="2"/></g>`; }
+function lock(x,y,s,c,open){ c=c||PAL.oro; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="13" width="22" height="17" rx="3" fill="${c}" fill-opacity="0.16"/>${open?'<path d="M8 13 v-4 a6 6 0 0 1 12 0"/>':'<path d="M8 13 v-4 a6 6 0 0 1 12 0 v4"/>'}<circle cx="14" cy="20" r="2" fill="${c}"/><path d="M14 22 v4"/></g>`; }
+function door(x,y,s,o){ o=o||{}; const c=o.accent||PAL.muted; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="2" width="34" height="58" rx="4" fill="${c}" fill-opacity="0.12"/>${o.bars?'<path d="M11 2 v58 M19 2 v58 M27 2 v58"/>':'<circle cx="29" cy="32" r="2" fill="currentColor"/>'}</g>`; }
+function cloud(x,y,s,c){ c=c||PAL.amat; return `<g transform="translate(${x},${y}) scale(${s})" fill="${c}" fill-opacity="0.16" stroke="${c}" stroke-width="2.4" stroke-linejoin="round">
+  <path d="M12 40 a12 12 0 0 1 0 -24 a14 14 0 0 1 26 -4 a10 10 0 0 1 4 28 z"/></g>`; }
+function clock(x,y,s,c){ c=c||PAL.oro; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="16" cy="16" r="14"/><path d="M16 8 v8 l6 4"/></g>`; }
+function scroll(x,y,s,o){ o=o||{}; const c=o.accent||PAL.paper; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="2" width="30" height="40" rx="4" fill="${c}" fill-opacity="0.10"/>${o.code?`<path d="M11 14 l-4 4 l4 4 M25 14 l4 4 l-4 4" stroke="${PAL.selva}"/><path d="M20 12 l-4 14" stroke="${PAL.oro}"/>`:'<path d="M9 12 h18 M9 19 h18 M9 26 h12" stroke-width="2"/>'}</g>`; }
+function vault(x,y,s){ return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="2" width="52" height="52" rx="6" fill="${PAL.amat}" fill-opacity="0.12"/><circle cx="28" cy="28" r="15"/><circle cx="28" cy="28" r="4" fill="${PAL.oro}" stroke="${PAL.oro}"/>
+  <path d="M28 13 v6 M28 37 v6 M13 28 h6 M37 28 h6" stroke="${PAL.oro}"/><path d="M39 39 l8 8" stroke="${PAL.oro}"/></g>`; }
+function passport(x,y,s){ return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="2" width="30" height="40" rx="3" fill="${PAL.selvaDk}" fill-opacity="0.22"/><circle cx="17" cy="15" r="6" stroke="${PAL.oro}"/><path d="M11 32 h12 M9 36 h16" stroke-width="2"/><path d="M17 9 a6 9 0 0 1 0 12 a6 9 0 0 1 0 -12" stroke="${PAL.oro}" stroke-width="1.5"/></g>`; }
+function wristband(x,y,s,c){ c=c||PAL.fuego; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M6 6 a16 16 0 1 0 16 0"/><rect x="6" y="2" width="16" height="9" rx="2" fill="${c}" fill-opacity="0.3"/></g>`; }
+function keycard(x,y,s,o){ o=o||{}; const c=o.accent||PAL.oro; return `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="2" width="40" height="26" rx="4" fill="${c}" fill-opacity="0.16"/><rect x="28" y="7" width="9" height="7" rx="1.5" fill="${c}" stroke="${c}"/><path d="M8 20 h22" stroke-width="2"/></g>`; }
+
+/* ---- decision tokens ---- */
+function tAllow(x,y,s){ return `<g transform="translate(${x},${y}) scale(${s})"><circle cx="14" cy="14" r="13" fill="${PAL.selvaDk}" fill-opacity="0.25" stroke="${PAL.selva}" stroke-width="2.6"/><path d="M8 14 l4 4 l8 -9" fill="none" stroke="${PAL.selva}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>`; }
+function tDeny(x,y,s){ return `<g transform="translate(${x},${y}) scale(${s})"><circle cx="14" cy="14" r="13" fill="${PAL.fuego}" fill-opacity="0.2" stroke="${PAL.fuego}" stroke-width="2.6"/><path d="M9 9 l10 10 M19 9 l-10 10" fill="none" stroke="${PAL.fuego}" stroke-width="3" stroke-linecap="round"/></g>`; }
+function tStep(x,y,s){ return `<g transform="translate(${x},${y}) scale(${s})"><path d="M14 1 l12 4 v9 c0 8 -6 12 -12 15 c-6 -3 -12 -7 -12 -15 v-9 z" fill="${PAL.oro}" fill-opacity="0.2" stroke="${PAL.oro}" stroke-width="2.4" stroke-linejoin="round"/><path d="M14 9 v9 M10 13 l4 -4 l4 4" fill="none" stroke="${PAL.oro}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>`; }
+function arrow(x1,y1,x2,y2,c){ c=c||PAL.muted; const a=Math.atan2(y2-y1,x2-x1); const L=8; const ax1=x2-L*Math.cos(a-0.4), ay1=y2-L*Math.sin(a-0.4), ax2=x2-L*Math.cos(a+0.4), ay2=y2-L*Math.sin(a+0.4);
+  return `<g fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M${x1} ${y1} L${x2} ${y2}"/><path d="M${ax1} ${ay1} L${x2} ${y2} L${ax2} ${ay2}"/></g>`; }
+function lbl(x,y,t,c){ c=c||PAL.muted; return `<text x="${x}" y="${y}" class="svg-lbl" fill="${c}" text-anchor="middle">${t}</text>`; }
+function star(x,y,s,c){ c=c||PAL.oro; return `<path transform="translate(${x},${y}) scale(${s})" d="M6 0 L7.5 4 L12 4.3 L8.5 7 L10 11 L6 8.5 L2 11 L3.5 7 L0 4.3 L4.5 4 Z" fill="${c}" opacity="0.8"/>`; }
+
+function svg(w,h,inner,vb){ return `<svg class="art" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img">${inner}</svg>`; }
+
+const ART = {
+  /* the two questions: a person at a gate, guard asks who + checks list */
+  twoQuestions(){ return svg(620,200,`
+    ${figPerson(70,55,1.5,{arms:'up'})}
+    ${badge(140,70,1.2)}
+    ${figGuard(300,55,1.5)}
+    ${door(470,40,1.5,{accent:PAL.amat})}
+    ${arrow(195,120,280,120,PAL.oro)}
+    ${arrow(395,120,470,120,PAL.oro)}
+    ${lbl(150,180,'1. Who are you?',PAL.oro)}
+    ${lbl(370,180,'2. What may you do?',PAL.oro)}
+    ${star(560,30,1.4)}${star(40,30,1)}
+  `); },
+
+  gatekeeperHero(){ return svg(620,210,`
+    ${figGuard(70,55,1.7)}
+    ${key(120,70,1.6)}
+    ${door(250,30,1.7,{accent:PAL.amat})}
+    ${tAllow(360,60,1.5)}
+    ${tStep(440,55,1.6)}
+    ${tDeny(530,60,1.5)}
+    ${lbl(375,150,'allow',PAL.selva)}${lbl(455,150,'step up',PAL.oro)}${lbl(545,150,'deny',PAL.fuego)}
+    ${star(590,30,1.3)}
+  `); },
+
+  whoNeedsId(){ return svg(640,180,`
+    ${figPerson(40,40,1.25)}${badge(78,52,0.8)}${lbl(58,170,'person',PAL.paper)}
+    ${figAgent(200,46,1.25,{accent:PAL.amat})}${badge(238,52,0.8)}${lbl(218,170,'AI agent',PAL.paper)}
+    ${figServer(360,40,1.2)}${badge(404,60,0.8)}${lbl(388,170,'service',PAL.paper)}
+    ${scroll(520,42,1.5)}${badge(560,60,0.8)}${lbl(548,170,'pipeline',PAL.paper)}
+  `); },
+
+  whatYouProtect(){ return svg(560,200,`
+    ${vault(40,55,1.6)}
+    ${arrow(160,120,210,120,PAL.oro)}
+    <g transform="translate(230,40)">
+      <rect x="0" y="0" width="120" height="34" rx="6" fill="${PAL.amatDk}" fill-opacity="0.35" stroke="${PAL.amat}" stroke-width="2"/>${lbl(60,22,'the model',PAL.paper)}
+      <rect x="0" y="48" width="120" height="34" rx="6" fill="${PAL.amatDk}" fill-opacity="0.35" stroke="${PAL.amat}" stroke-width="2"/>${lbl(60,70,'the data',PAL.paper)}
+      <rect x="0" y="96" width="120" height="34" rx="6" fill="${PAL.amatDk}" fill-opacity="0.35" stroke="${PAL.amat}" stroke-width="2"/>${lbl(60,118,'the APIs',PAL.paper)}
+    </g>
+    ${key(420,95,1.8)}
+  `); },
+
+  oldVsNew(){ return svg(640,210,`
+    <g transform="translate(0,0)">
+      ${figPerson(40,55,1.1)}${door(150,45,1.2,{accent:PAL.muted})}
+      ${lbl(110,185,'before: a few humans, one door',PAL.muted)}
+    </g>
+    <path d="M310 20 V190" stroke="${PAL.muted}" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <g transform="translate(330,0)">
+      ${figPerson(10,40,0.8)}${figAgent(70,46,0.8)}${figServer(130,42,0.7)}
+      ${door(210,30,0.95,{accent:PAL.amat})}${door(250,30,0.95,{accent:PAL.amat})}${door(290,30,0.95,{accent:PAL.amat})}
+      ${arrow(40,150,210,150,PAL.fuego)}
+      ${lbl(150,185,'now: people + agents + services, many doors, fast',PAL.muted)}
+    </g>
+  `); },
+
+  rolesVsAttrs(){ return svg(620,200,`
+    <g transform="translate(40,20)">
+      <path d="M10 30 q30 -28 60 0 l-8 8 h-44 z" fill="${PAL.amat}" fill-opacity="0.3" stroke="${PAL.amat}" stroke-width="2.4" stroke-linejoin="round"/>
+      ${lbl(40,70,'RBAC: your hat',PAL.paper)}${lbl(40,92,'(one label)',PAL.muted)}
+    </g>
+    <g transform="translate(360,14)">
+      <rect x="0" y="0" width="150" height="96" rx="8" fill="${PAL.selvaDk}" fill-opacity="0.16" stroke="${PAL.selva}" stroke-width="2"/>
+      ${tAllow(8,8,0.6)}<text x="30" y="25" class="svg-lbl" fill="${PAL.paper}">staging?</text>
+      ${tAllow(8,34,0.6)}<text x="30" y="51" class="svg-lbl" fill="${PAL.paper}">work hours?</text>
+      ${tAllow(8,60,0.6)}<text x="30" y="77" class="svg-lbl" fill="${PAL.paper}">low risk?</text>
+      ${lbl(75,128,'ABAC: a checklist',PAL.paper)}
+    </g>
+  `); },
+
+  lifecycle(){ return svg(640,170,`
+    ${figPerson(40,40,1.0)}${lbl(60,160,'join',PAL.selva)}${key(95,60,1.1)}
+    ${arrow(150,90,210,90,PAL.muted)}
+    ${figPerson(230,40,1.0,{arms:'out'})}${lbl(250,160,'move',PAL.oro)}
+    ${arrow(330,90,390,90,PAL.muted)}
+    ${figPerson(410,40,1.0)}${lbl(430,160,'leave',PAL.fuego)}
+    ${arrow(470,70,520,70,PAL.fuego)}${key(525,55,1.1,PAL.fuego)}${tDeny(560,55,1.0)}
+    ${lbl(560,160,'keys back',PAL.fuego)}
+  `); },
+
+  leftoverKeys(){ return svg(600,180,`
+    ${door(40,30,1.5,{accent:PAL.muted})}
+    <g stroke="${PAL.fuego}" stroke-width="2.4" fill="none" stroke-linecap="round">
+      ${key(170,30,1.2,PAL.fuego)}${key(250,80,1.2,PAL.fuego)}${key(330,40,1.2,PAL.fuego)}${key(420,90,1.2,PAL.fuego)}${key(500,45,1.2,PAL.fuego)}
+    </g>
+    ${lbl(360,165,'access nobody remembers granting',PAL.fuego)}
+  `); },
+
+  federated(){ return svg(640,210,`
+    ${[40,250,460].map((bx,i)=>`
+      <rect x="${bx}" y="60" width="120" height="80" rx="8" fill="${PAL.amatDk}" fill-opacity="0.25" stroke="${PAL.amat}" stroke-width="2"/>
+      ${figServer(bx+18,72,0.85)}${lock(bx+74,92,0.9,PAL.selva)}
+      ${arrow(bx+60,55,bx+60,18,PAL.oro)}
+      ${lbl(bx+60,200,['hospital A','hospital B','hospital C'][i],PAL.paper)}
+    `).join('')}
+    ${lbl(320,14,'only model updates travel up. data stays home.',PAL.oro)}
+  `); },
+
+  sso(){ return svg(600,180,`
+    ${wristband(40,50,1.5)}
+    ${[200,320,440].map(dx=>`${door(dx,30,1.2,{accent:PAL.amat})}${tAllow(dx+8,8,0.7)}`).join('')}
+    ${arrow(130,90,200,90,PAL.selva)}
+    ${lbl(360,165,'one wristband opens every booth',PAL.selva)}
+  `); },
+
+  valet(){ return svg(600,190,`
+    ${figPerson(40,50,1.3)}
+    ${arrow(120,100,200,100,PAL.oro)}
+    ${figPerson(220,50,1.3,{cap:true,accent:PAL.selva,arms:'out'})}
+    ${key(300,80,1.3)}
+    ${lbl(160,180,'gives a limited key',PAL.oro)}
+    ${lbl(380,180,'valet drives, cannot open the trunk',PAL.muted)}
+    ${door(470,40,1.3,{accent:PAL.amat})}
+  `); },
+
+  silos(){ return svg(600,190,`
+    ${[40,230,420].map((sx,i)=>`
+      <g transform="translate(${sx},40)"><ellipse cx="55" cy="10" rx="50" ry="12" fill="${PAL.amatDk}" fill-opacity="0.3" stroke="${PAL.amat}" stroke-width="2"/><path d="M5 10 v80 a50 12 0 0 0 100 0 v-80" fill="${PAL.amatDk}" fill-opacity="0.18" stroke="${PAL.amat}" stroke-width="2"/></g>
+    `).join('')}
+    <path d="M150 70 q150 -45 300 0" fill="none" stroke="${PAL.oro}" stroke-width="2.6" stroke-dasharray="2 6" stroke-linecap="round"/>
+    ${lbl(300,40,'a bridge of trust',PAL.oro)}
+    ${lbl(300,178,'three data silos, never merged',PAL.muted)}
+  `); },
+
+  privacy(){ return svg(560,180,`
+    ${figPerson(60,45,1.5)}
+    <rect x="40" y="58" width="60" height="16" rx="4" fill="${PAL.amat}" fill-opacity="0.5" stroke="${PAL.amat}" stroke-width="2"/>
+    ${arrow(180,95,250,95,PAL.selva)}
+    ${badge(280,55,1.4,PAL.selva)}
+    ${lbl(300,165,'prove you qualify, reveal nothing extra',PAL.selva)}
+  `); },
+
+  borders(){ return svg(560,200,`
+    <circle cx="150" cy="100" r="75" fill="${PAL.amatDk}" fill-opacity="0.12" stroke="${PAL.amat}" stroke-width="2"/>
+    <path d="M150 25 V175 M75 100 H225 M95 55 q55 45 110 0 M95 145 q55 -45 110 0" fill="none" stroke="${PAL.amat}" stroke-width="1.4"/>
+    ${key(135,88,1.3,PAL.fuego)}
+    <path d="M225 100 H260" stroke="${PAL.fuego}" stroke-width="2.4" stroke-dasharray="4 4"/>${tDeny(262,86,1.0)}
+    ${lbl(150,195,'raw data cannot cross',PAL.fuego)}
+    <path d="M330 100 q60 -40 120 0" fill="none" stroke="${PAL.selva}" stroke-width="2.6" stroke-dasharray="2 6"/>
+    ${badge(360,80,1.1,PAL.selva)}${badge(440,80,1.1,PAL.selva)}
+    ${lbl(420,195,'identity can be bridged',PAL.selva)}
+  `); },
+
+  oidcVsOauth(){ return svg(600,190,`
+    <g transform="translate(40,20)"><rect x="0" y="0" width="220" height="120" rx="10" fill="${PAL.selvaDk}" fill-opacity="0.14" stroke="${PAL.selva}" stroke-width="2"/>
+      ${badge(20,28,1.3,PAL.selva)}${lbl(140,55,'ID token',PAL.paper)}${lbl(140,80,'who you are',PAL.selva)}</g>
+    <g transform="translate(330,20)"><rect x="0" y="0" width="220" height="120" rx="10" fill="${PAL.oro}" fill-opacity="0.1" stroke="${PAL.oro}" stroke-width="2"/>
+      ${key(20,40,1.5)}${lbl(140,55,'access token',PAL.paper)}${lbl(140,80,'what you may do',PAL.oro)}</g>
+    ${lbl(150,175,'OIDC authenticates',PAL.selva)}${lbl(440,175,'OAuth authorizes',PAL.oro)}
+  `); },
+
+  spiffe(){ return svg(560,180,`
+    ${figServer(50,45,1.1)}
+    ${arrow(150,90,210,90,PAL.oro)}
+    ${passport(240,40,1.7)}
+    ${figServer(420,45,1.1)}
+    ${arrow(360,90,410,90,PAL.selva)}${tAllow(360,40,0.8)}
+    ${lbl(270,170,'every service carries a passport',PAL.oro)}
+  `); },
+
+  endpoint(){ return svg(560,180,`
+    ${figPerson(40,50,1.0)}${figAgent(110,56,1.0)}
+    ${arrow(180,95,250,95,PAL.muted)}
+    ${figGuard(270,55,1.3)}
+    ${door(380,35,1.3,{accent:PAL.amat})}
+    ${figServer(470,45,1.0,{accent:PAL.selva})}
+    ${lbl(300,165,'a guard in front of the model endpoint',PAL.muted)}
+  `); },
+
+  tokenLife(){ return svg(560,170,`
+    ${keycard(40,55,1.6)}
+    ${clock(220,45,1.7)}
+    ${arrow(300,80,360,80,PAL.fuego)}
+    <path d="M380 60 l30 30 M410 60 l-30 30" stroke="${PAL.fuego}" stroke-width="2.6" stroke-linecap="round"/>
+    ${lbl(110,150,'token issued',PAL.oro)}${lbl(395,150,'expires fast',PAL.fuego)}
+  `); },
+
+  scopes(){ return svg(540,170,`
+    <circle cx="70" cy="85" r="26" fill="none" stroke="${PAL.oro}" stroke-width="3"/>
+    ${key(120,40,0.9)}${key(150,80,0.9)}${key(120,110,0.9)}
+    ${lbl(110,160,'one keyring, many small keys',PAL.oro)}
+    ${lbl(380,60,'read:data',PAL.muted)}${lbl(380,90,'write:logs',PAL.muted)}${lbl(380,120,'call:model',PAL.muted)}
+  `); },
+
+  jitCard(){ return svg(560,180,`
+    ${keycard(40,40,1.7)}
+    ${clock(230,40,1.5)}
+    ${tAllow(360,30,1.2)}
+    ${arrow(300,70,355,55,PAL.selva)}
+    ${arrow(255,110,360,120,PAL.fuego)}${tDeny(370,108,1.0)}
+    ${lbl(110,150,'works for one hour',PAL.oro)}${lbl(410,150,'then dead',PAL.fuego)}
+  `); },
+
+  pep(){ return svg(560,180,`
+    ${figPerson(40,50,1.1)}
+    ${arrow(130,95,190,95,PAL.muted)}
+    ${figGuard(210,52,1.5)}
+    ${scroll(300,45,1.2,{accent:PAL.paper})}
+    ${arrow(360,95,420,95,PAL.selva)}
+    ${door(450,40,1.3,{accent:PAL.amat})}
+    ${lbl(250,165,'the one checkpoint every request passes',PAL.oro)}
+  `); },
+
+  zeroTrust(){ return svg(620,200,`
+    <g transform="translate(0,10)"><path d="M30 40 h180 v110 h-180 z" fill="none" stroke="${PAL.fuego}" stroke-width="2.6"/>${figPerson(60,70,0.8)}${figPerson(110,70,0.8)}${figAgent(150,76,0.8)}${lbl(120,180,'one wall, trust inside',PAL.fuego)}</g>
+    <g transform="translate(330,10)">
+      ${[10,90,170].map(dx=>`${figGuard(dx,55,0.9)}${door(dx+40,45,0.8,{accent:PAL.amat})}`).join('')}
+      ${lbl(130,180,'a guard at every door',PAL.selva)}
+    </g>
+  `); },
+
+  context(){ return svg(620,180,`
+    ${figPerson(60,45,1.3)}
+    ${arrow(150,90,230,60,PAL.selva)}${arrow(150,95,230,95,PAL.oro)}${arrow(150,100,230,130,PAL.fuego)}
+    <g transform="translate(245,30)">${tAllow(0,0,0.9)}<text x="34" y="18" class="svg-lbl" fill="${PAL.selva}">known laptop, 2pm</text></g>
+    <g transform="translate(245,75)">${tStep(0,0,0.9)}<text x="34" y="18" class="svg-lbl" fill="${PAL.oro}">new phone, new city</text></g>
+    <g transform="translate(245,120)">${tDeny(0,0,0.9)}<text x="34" y="18" class="svg-lbl" fill="${PAL.fuego}">3am, exporting weights</text></g>
+    ${lbl(110,170,'same person, the context decides',PAL.muted)}
+  `); },
+
+  fineGrained(){ return svg(540,160,`
+    <path d="M40 110 H500" stroke="${PAL.muted}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="430" cy="110" r="12" fill="${PAL.oro}" stroke="${PAL.oro}"/>
+    ${lbl(70,140,'coarse: in or out',PAL.muted)}${lbl(450,140,'fine: this row, this hour',PAL.oro)}
+    ${lbl(270,40,'turn the dial up for risky tasks',PAL.paper)}
+  `); },
+
+  audit(){ return svg(560,160,`
+    <path d="M30 110 q40 -30 80 0 q40 30 80 0 q40 -30 80 0 q40 30 80 0" fill="none" stroke="${PAL.muted}" stroke-width="2.4" stroke-dasharray="1 7" stroke-linecap="round"/>
+    ${[60,140,220,300,380].map(fx=>`<ellipse cx="${fx}" cy="${100+(fx%80?6:-6)}" rx="6" ry="9" fill="${PAL.amat}" opacity="0.5"/>`).join('')}
+    <circle cx="430" cy="80" r="22" fill="none" stroke="${PAL.oro}" stroke-width="3"/><path d="M447 97 l20 20" stroke="${PAL.oro}" stroke-width="3" stroke-linecap="round"/>
+    ${lbl(250,150,'every step leaves a footprint',PAL.oro)}
+  `); },
+
+  brokering(){ return svg(600,190,`
+    ${cloud(30,40,1.3,PAL.fuego)}${lbl(75,150,'cloud A',PAL.muted)}
+    <g transform="translate(230,55)"><rect x="0" y="0" width="120" height="70" rx="8" fill="${PAL.oro}" fill-opacity="0.12" stroke="${PAL.oro}" stroke-width="2"/>${lbl(60,30,'broker',PAL.oro)}${lbl(60,52,'(exchange)',PAL.muted)}</g>
+    ${cloud(470,40,1.3,PAL.selva)}${lbl(515,150,'cloud B',PAL.muted)}
+    ${arrow(150,90,228,90,PAL.muted)}${arrow(352,90,455,90,PAL.selva)}
+    ${lbl(300,175,'trade a home ID for a short-lived pass',PAL.oro)}
+  `); },
+
+  gateway(){ return svg(560,180,`
+    ${figPerson(30,55,1.0)}${figAgent(95,60,1.0)}
+    ${arrow(165,95,215,95,PAL.muted)}
+    <g transform="translate(225,30)"><rect x="0" y="0" width="50" height="120" rx="8" fill="${PAL.amatDk}" fill-opacity="0.3" stroke="${PAL.amat}" stroke-width="2.4"/>${badge(12,45,0.9)}</g>
+    ${[330,420,500].map(sx=>`${figServer(sx,55,0.7)}`).join('')}
+    ${lbl(250,170,'one identity-aware gate in front',PAL.oro)}
+  `); },
+
+  microservices(){ return svg(600,180,`
+    ${[40,150,260,370,480].map((sx,i)=>`${figServer(sx,40,0.85)}${badge(sx+24,82,0.7)}`).join('')}
+    ${lbl(300,165,'each tiny service carries its own badge',PAL.oro)}
+  `); },
+
+  tenant(){ return svg(560,200,`
+    <rect x="180" y="20" width="200" height="160" rx="8" fill="${PAL.amatDk}" fill-opacity="0.18" stroke="${PAL.amat}" stroke-width="2"/>
+    ${[0,1,2,3].map(i=>`<rect x="${190+(i%2)*95}" y="${30+Math.floor(i/2)*75}" width="85" height="65" rx="6" fill="none" stroke="${PAL.muted}" stroke-width="2"/>${lock(195+(i%2)*95+28,45+Math.floor(i/2)*75,0.8,[PAL.selva,PAL.oro,PAL.fuego,PAL.amat][i])}`).join('')}
+    ${lbl(280,195,'one building, walls between every unit',PAL.oro)}
+  `); },
+
+  hybridGov(){ return svg(560,180,`
+    ${cloud(40,30,1.2,PAL.fuego)}${cloud(180,30,1.2,PAL.selva)}${cloud(320,30,1.2,PAL.amat)}
+    ${scroll(440,30,1.6,{accent:PAL.oro})}
+    ${[95,235,375].map(cx=>`${arrow(cx,95,455,90,PAL.muted)}`).join('')}
+    ${lbl(280,165,'different clouds, one rulebook',PAL.oro)}
+  `); },
+
+  compliance(){ return svg(540,160,`
+    ${scroll(60,30,1.8,{accent:PAL.paper})}
+    ${arrow(150,80,210,80,PAL.muted)}
+    ${tAllow(240,40,1.4)}
+    ${badge(340,35,1.5,PAL.selva)}
+    ${lbl(270,140,'the rules become real checks',PAL.selva)}
+  `); },
+
+  pipelineAudit(){ return svg(580,160,`
+    ${[40,170,300,430].map((sx,i)=>`<rect x="${sx}" y="55" width="90" height="50" rx="8" fill="${PAL.amatDk}" fill-opacity="0.25" stroke="${PAL.amat}" stroke-width="2"/>${i<3?arrow(sx+90,80,sx+130,80,PAL.muted):''}`).join('')}
+    ${[85,215,345,475].map(fx=>`<ellipse cx="${fx}" cy="125" rx="5" ry="8" fill="${PAL.oro}" opacity="0.6"/>`).join('')}
+    ${lbl(290,150,'who touched data at each stage',PAL.oro)}
+  `); },
+
+  policyAsCode(){ return svg(540,160,`
+    ${scroll(50,30,1.6,{accent:PAL.paper})}
+    ${arrow(140,80,200,80,PAL.muted)}
+    ${scroll(230,30,1.6,{code:true,accent:PAL.selvaDk})}
+    ${tAllow(340,35,1.2)}
+    ${lbl(90,150,'a written rule',PAL.muted)}${lbl(280,150,'becomes code that enforces itself',PAL.selva)}
+  `); },
+
+  drift(){ return svg(600,180,`
+    <g transform="translate(20,20)"><rect x="0" y="0" width="160" height="120" rx="8" fill="none" stroke="${PAL.selva}" stroke-width="2"/>${[20,60,100].map(yy=>`<rect x="20" y="${yy}" width="120" height="20" rx="3" fill="${PAL.selva}" fill-opacity="0.25" stroke="${PAL.selva}" stroke-width="1.5"/>`).join('')}${lbl(80,160,'tidy on day one',PAL.selva)}</g>
+    ${arrow(210,80,290,80,PAL.muted)}
+    <g transform="translate(320,20)"><rect x="0" y="0" width="160" height="120" rx="8" fill="none" stroke="${PAL.fuego}" stroke-width="2"/>${[10,38,70,95,55].map((yy,i)=>`<rect x="${15+i*6}" y="${yy}" width="${90+i*8}" height="16" rx="3" fill="${PAL.fuego}" fill-opacity="0.22" stroke="${PAL.fuego}" stroke-width="1.5" transform="rotate(${i%2?3:-3} 80 ${yy})"/>`).join('')}${lbl(80,160,'drift, a year later',PAL.fuego)}</g>
+  `); },
+
+  riskScore(){ return svg(520,180,`
+    <path d="M60 140 A90 90 0 0 1 240 140" fill="none" stroke="${PAL.muted}" stroke-width="10" stroke-linecap="round"/>
+    <path d="M60 140 A90 90 0 0 1 110 70" fill="none" stroke="${PAL.selva}" stroke-width="10" stroke-linecap="round"/>
+    <path d="M190 70 A90 90 0 0 1 240 140" fill="none" stroke="${PAL.fuego}" stroke-width="10" stroke-linecap="round"/>
+    <path d="M150 140 L205 90" stroke="${PAL.oro}" stroke-width="4" stroke-linecap="round"/><circle cx="150" cy="140" r="7" fill="${PAL.oro}"/>
+    ${lbl(75,165,'low',PAL.selva)}${lbl(225,165,'high',PAL.fuego)}
+    ${lbl(390,90,'score climbs with',PAL.paper)}${lbl(390,114,'risky context',PAL.muted)}
+  `); },
+
+  sod(){ return svg(560,180,`
+    ${figPerson(40,50,1.1)}${key(120,70,1.2)}
+    ${figPerson(200,50,1.1,{accent:PAL.selva})}${key(280,70,1.2,PAL.selva)}
+    ${lock(370,55,2.0,PAL.fuego)}
+    ${arrow(150,95,360,95,PAL.muted)}${arrow(310,95,360,95,PAL.muted)}
+    ${lbl(280,165,'two people, two keys, one high-risk action',PAL.oro)}
+  `); },
+
+  finale(){ return svg(620,200,`
+    ${figGuard(60,55,1.7)}
+    ${key(110,70,1.3)}${badge(150,70,1.0)}${passport(195,55,1.0)}${clock(250,60,1.0)}
+    ${tAllow(330,55,1.4)}${tStep(410,50,1.5)}${tDeny(500,55,1.4)}
+    ${star(580,30,1.5)}${star(560,160,1.1)}${star(30,30,1.1)}
+    ${lbl(310,185,'you can read every one of these now',PAL.oro)}
+  `); }
+};
+
+const MODULES = [
+  {
+    n:"Start", title:"Orientation",
+    lessons:[
+      { id:"intro", title:"What this lesson is", body:`
+        <div class="eyebrow">${ic('map')} Start here</div>
+        <h2 class="title">You are the bouncer for an organization's AI</h2>
+        <figure class="scene">${ART.gatekeeperHero()}<figcaption>Every request gets one of three answers: allow, step up, or deny.</figcaption></figure>
+        <p class="lede">Every time a person, an app, or an AI agent reaches for a model, a dataset, or an API, someone decides whether to let it through. That someone is you.</p>
+        <div class="big">Two questions answer almost everything: <b>who are you</b>, and <b>what are you allowed to do</b>.</div>
+        <figure class="scene">${ART.twoQuestions()}<figcaption>Showing your badge is authentication. Checking the guest list is authorization.</figcaption></figure>
+        <div class="aha">${ic('bulb')}<div>Keep that picture in your head. Every fancy acronym in this course is just a smarter way to answer one of those two questions.</div></div>
+        <p>One big thing AI changed: the "who" is no longer only people. Agents and services now knock on the door too, thousands of times a second. Here is the simple shape we will use the whole way through.</p>
+`, widget:"mentalModel" },
+    ]
+  },
+  {
+    n:1, title:"Foundations of AI IAM",
+    lessons:[
+      { id:"m1-scope", title:"Who and what needs an identity now", body:`
+        <h2 class="title">Who needs an identity now</h2>
+        <figure class="scene">${ART.whoNeedsId()}<figcaption>People are just one knocker at the door. Agents, services, and pipelines all need a name too.</figcaption></figure>
+        <p class="lede">For decades, identity meant employees logging into apps. AI blew that wide open. Now four kinds of actors show up, and every one of them needs its own identity.</p>
+        <div class="aha">${ic('warn')}<div>When software borrows a human's login, you lose track of who really did what. Give each actor its own name.</div></div>
+        <p>Tap each one below to see what it is and why it needs a badge.</p>
+`, widget:"identityScope" },
+      { id:"m1-resource", title:"What you are protecting", body:`
+        <h2 class="title">What you are actually guarding</h2>
+        <figure class="scene">${ART.whatYouProtect()}<figcaption>Three things live in the vault: the model, the data, and the APIs that reach them.</figcaption></figure>
+        <p class="lede">In a normal app you protect records. With AI, the crown jewels are different, and often worth a lot more.</p>
+        <div class="tiles">
+          <div class="mini"><h5>The model</h5>Its weights are months of work and money. Leaked, they walk out the door.</div>
+          <div class="mini"><h5>The data</h5>Training data and prompts can hold secrets and personal information.</div>
+          <div class="mini"><h5>The APIs</h5>The doors into both. A wide open door is an invitation.</div>
+        </div>
+` },
+      { id:"m1-vs", title:"AI IAM versus traditional IAM", body:`
+        <h2 class="title">Why AI breaks old-school IAM</h2>
+        <figure class="scene">${ART.oldVsNew()}<figcaption>Left: the cozy old world. Right: the one you actually work in.</figcaption></figure>
+        <p class="lede">Traditional IAM assumed a short list of humans logging into a handful of apps. AI changes three things at once.</p>
+        <div class="tiles">
+          <div class="mini"><h5>More "who"</h5>Agents and services, not just people.</div>
+          <div class="mini"><h5>Richer "what"</h5>Weights, data, and prompts, not just records.</div>
+          <div class="mini"><h5>Far more speed</h5>Thousands of requests in seconds.</div>
+        </div>
+        <p>Same two questions as before. Just a lot more actors asking, a lot faster.</p>
+` },
+      { id:"m1-rbac", title:"RBAC and ABAC, how permission is decided", body:`
+        <h2 class="title">How permission gets decided</h2>
+        <figure class="scene">${ART.rolesVsAttrs()}<figcaption>RBAC checks your label. ABAC checks the whole situation.</figcaption></figure>
+        <p class="lede">Two ways to answer "what may you do." One looks at who you are. The other looks at what is true right now.</p>
+        <div class="twocol">
+          <div class="mini"><h5>RBAC, by role</h5>You wear a hat: viewer, engineer, admin. Simple, and great for coarse calls.</div>
+          <div class="mini"><h5>ABAC, by attributes</h5>It weighs facts: which environment, what time, how sensitive. Great for nuance.</div>
+        </div>
+        <p>Play with the demo below. Flip the role and the conditions, and watch the answer change.</p>
+`, widget:"rbacAbac" },
+      { id:"m1-lifecycle", title:"The identity lifecycle", body:`
+        <h2 class="title">Identity has a lifecycle</h2>
+        <figure class="scene">${ART.lifecycle()}<figcaption>Join, move, leave. The dangerous part is that last arrow.</figcaption></figure>
+        <p class="lede">Access should be born when someone joins, shift when their job shifts, and die the moment they leave. That last step is where most messes start.</p>
+        <div class="aha">${ic('bulb')}<div>The same rule applies to agents and services. When a pipeline is retired, its keys should come back too.</div></div>
+` },
+      { id:"m1-challenges", title:"Key challenges, then a quick check", body:`
+        <h2 class="title">The classic ways this goes wrong</h2>
+        <figure class="scene">${ART.leftoverKeys()}<figcaption>The number one problem: keys nobody remembers handing out.</figcaption></figure>
+        <p class="lede">Most IAM failures are not exotic. They are leftovers, shared logins, and access that quietly piled up.</p>
+        <div class="tiles">
+          <div class="mini"><h5>Leftover access</h5>Never revoked after the reason ended.</div>
+          <div class="mini"><h5>Shared logins</h5>You cannot tell who did what.</div>
+          <div class="mini"><h5>Too much, too fast</h5>Scale hides the over-grants.</div>
+        </div>
+        <p>Quick check before you move on.</p>
+`, quiz:[
+        { q:"An AI agent that schedules meetings calls the calendar API on its own. In IAM terms, what is the agent?",
+          opts:["Just a feature of the user's account","Its own identity that needs its own controls","A dataset","An audit log"],
+          a:1, why:"The agent acts independently, so it is a non-human identity. It needs its own scoped credentials, not a borrowed copy of the user's full access." },
+        { q:"Your role is 'ML engineer' so you can deploy to staging. That permission style is:",
+          opts:["ABAC","Zero Trust","RBAC","Federation"],
+          a:2, why:"Permission attached to a job role is the definition of role-based access control, RBAC." },
+        { q:"Why does the same model often have stricter rules in production than in a sandbox?",
+          opts:["Production is slower","The environment metadata changes the access decision","Sandboxes are illegal","Models forget their training"],
+          a:1, why:"Environment is a key piece of metadata. The same asset in production carries more risk, so conditional access tightens." },
+        { q:"What is the most common real-world cause of access-related breaches?",
+          opts:["Clever zero-day hacks","Access that was never removed","Too many passwords","Slow networks"],
+          a:1, why:"Leftover access from poor deprovisioning and missed reviews is the quiet, common culprit. Lifecycle discipline prevents it." }
+      ] },
+    ]
+  },
+  {
+    n:2, title:"Federated Identity in Distributed AI",
+    lessons:[
+      { id:"m2-fed", title:"Federated learning and identity", body:`
+        <h2 class="title">Train together, keep your data home</h2>
+        <figure class="scene">${ART.federated()}<figcaption>Each site trains locally. Only the lessons learned travel up.</figcaption></figure>
+        <p class="lede">Federated learning lets several organizations build one shared model without ever pooling their raw data. The data stays home. Only model updates move.</p>
+        <div class="aha">${ic('bulb')}<div>That solves the data problem and creates an identity problem: how does the aggregator know an update really came from Hospital B?</div></div>
+` },
+      { id:"m2-sso", title:"Single sign-on across ML tools", body:`
+        <h2 class="title">One sign-in, many tools</h2>
+        <figure class="scene">${ART.sso()}<figcaption>Sign in once, and the wristband gets you into every booth.</figcaption></figure>
+        <p class="lede">Single sign-on lets a person prove who they are once and then move between many ML tools without logging in again and again.</p>
+        <div class="aha">${ic('warn')}<div>Convenient, but the wristband is now precious. If it is stolen, it opens everything. That is why the next topics matter.</div></div>
+` },
+      { id:"m2-deleg", title:"Delegation and token exchange", body:`
+        <h2 class="title">Acting on someone's behalf, safely</h2>
+        <figure class="scene">${ART.valet()}<figcaption>A valet key starts the car but will not open the trunk.</figcaption></figure>
+        <p class="lede">Often one service has to act for you. You do not hand over your master key. You hand over a limited one.</p>
+        <div class="big">Delegation plus <b>token exchange</b> means each handoff gets a narrower key, scoped to just that one job.</div>
+` },
+      { id:"m2-silos", title:"Trust across data silos", body:`
+        <h2 class="title">Trust across data silos</h2>
+        <figure class="scene">${ART.silos()}<figcaption>Three silos that never merge, joined by a thin bridge of trust.</figcaption></figure>
+        <p class="lede">Different teams and companies keep their data in separate silos on purpose. The job is not to knock down the walls. It is to let them trust each other's identities across the gap.</p>
+` },
+      { id:"m2-privacy", title:"Privacy-preserving identity", body:`
+        <h2 class="title">Prove it without spilling it</h2>
+        <figure class="scene">${ART.privacy()}<figcaption>Show that you qualify, reveal nothing extra.</figcaption></figure>
+        <p class="lede">Privacy-preserving identity lets someone prove a fact (I am allowed, I am over the threshold) without exposing the personal data behind it.</p>
+        <div class="aha">${ic('bulb')}<div>Think of flashing a "yes, allowed" stamp instead of handing over your whole file.</div></div>
+` },
+      { id:"m2-border", title:"Cross-border challenges, then a check", body:`
+        <h2 class="title">When borders enter the picture</h2>
+        <figure class="scene">${ART.borders()}<figcaption>The raw data cannot cross the line. The identity can be bridged across it.</figcaption></figure>
+        <p class="lede">Across countries, law often forbids moving raw data. Identity, though, can still be federated, so each side keeps its own authority and they trust each other anyway.</p>
+        <p>Quick check.</p>
+`, quiz:[
+        { q:"In federated learning, what actually gets shared between sites?",
+          opts:["The full raw datasets","Only model updates, while raw data stays local","Nothing, it cannot work","User passwords"],
+          a:1, why:"Federated learning keeps raw data at each site and shares only the model updates. That is the whole point, and it is why identity must span organizations." },
+        { q:"A delegated token is bound to one target service by which signal?",
+          opts:["Scope","Audience","Subject","Expiry"],
+          a:1, why:"The audience claim binds a token to a specific target so it cannot be replayed against a different service." },
+        { q:"Two partner systems can reach each other on the network. Does that establish trust?",
+          opts:["Yes, connection equals trust","No, trust comes from issuer trust, attribute mapping, and policy","Only on weekends","Only for humans"],
+          a:1, why:"Network reachability is never trust. Trust is built deliberately from recognized issuers, mapped attributes, and local policy." },
+        { q:"Proving you have a valid role without revealing your name or address is an example of:",
+          opts:["Identity sprawl","Selective disclosure","Policy drift","Token theft"],
+          a:1, why:"Selective disclosure reveals only the needed fact, supporting data minimization while still proving eligibility." }
+      ] },
+    ]
+  },
+  {
+    n:3, title:"Access Control Protocols",
+    lessons:[
+      { id:"m3-oauth", title:"OAuth 2.0, the valet for APIs", body:`
+        <h2 class="title">OAuth, the valet for APIs</h2>
+        <figure class="scene">${ART.valet()}<figcaption>OAuth hands an app a limited key, never your password.</figcaption></figure>
+        <p class="lede">OAuth lets you grant an app permission to do specific things on your behalf, without ever giving it your actual login. Limited key, not the master.</p>
+        <p>Walk the handoff step by step below.</p>
+`, widget:"oauthFlow" },
+      { id:"m3-oidc", title:"OpenID Connect, proving who you are", body:`
+        <h2 class="title">OpenID Connect, proving who you are</h2>
+        <figure class="scene">${ART.oidcVsOauth()}<figcaption>Two different tokens for two different questions.</figcaption></figure>
+        <p class="lede">OAuth answers "what may this app do." It does not actually prove who you are. OpenID Connect sits on top and adds that missing piece.</p>
+        <div class="twocol">
+          <div class="mini allow"><h5>ID token (OIDC)</h5>Proof of identity. Who you are.</div>
+          <div class="mini"><h5>Access token (OAuth)</h5>Permission slip. What you may do.</div>
+        </div>
+        <div class="aha">${ic('warn')}<div>Using an access token as proof of login is a classic mistake. Right token, right question.</div></div>
+` },
+      { id:"m3-spiffe", title:"SPIFFE and SPIRE, passports for software", body:`
+        <h2 class="title">SPIFFE and SPIRE, passports for software</h2>
+        <figure class="scene">${ART.spiffe()}<figcaption>Every service gets a verifiable passport, issued and stamped automatically.</figcaption></figure>
+        <p class="lede">People have IDs. Services need them too. SPIFFE is the passport format, and SPIRE is the office that issues and renews them, so software can prove who it is to other software.</p>
+        <div class="aha">${ic('bulb')}<div>No shared passwords pasted in config files. Each service shows a passport that is short-lived and checkable.</div></div>
+` },
+      { id:"m3-inference", title:"Securing inference endpoints", body:`
+        <h2 class="title">Guarding the model's front door</h2>
+        <figure class="scene">${ART.endpoint()}<figcaption>The inference endpoint is a door. It deserves a guard.</figcaption></figure>
+        <p class="lede">The inference endpoint is where the world sends prompts and gets answers. It is the most exposed door you have, so every caller proves who they are and only gets what they should.</p>
+` },
+      { id:"m3-token", title:"Token lifecycle management", body:`
+        <h2 class="title">Tokens should not live forever</h2>
+        <figure class="scene">${ART.tokenLife()}<figcaption>Issued, used, expired. Shorter life means smaller damage if it leaks.</figcaption></figure>
+        <p class="lede">A token is a temporary pass. The whole point is that it expires. A short-lived token that leaks is far less dangerous than a long-lived one.</p>
+        <div class="aha">${ic('bulb')}<div>Rotating a long-lived secret shrinks the risk. Replacing it with a short-lived one removes a whole class of risk.</div></div>
+` },
+      { id:"m3-scopes", title:"Scopes and claims, then a check", body:`
+        <h2 class="title">Scopes and claims, the fine print</h2>
+        <figure class="scene">${ART.scopes()}<figcaption>One keyring, many small labeled keys. Each opens just one thing.</figcaption></figure>
+        <p class="lede">A scope says what a token may do (read this, write that). A claim is a fact carried inside it (this is who I am, this is my tenant). Together they keep access narrow.</p>
+        <p>Quick check.</p>
+`, quiz:[
+        { q:"In OAuth 2.0, which actor issues the access token?",
+          opts:["Resource owner","Client","Authorization server","Resource server"],
+          a:2, why:"The authorization server validates the request and issues the token. The resource server then checks that token when the client calls it." },
+        { q:"What does an OIDC ID token primarily prove?",
+          opts:["What APIs you can call","Who you are","Your network speed","The model version"],
+          a:1, why:"The ID token is the authentication result. It proves identity. The access token is what carries API permission." },
+        { q:"SPIFFE and SPIRE exist mainly to replace what?",
+          opts:["Human passwords","Long-lived static secrets for workloads","Audit logs","Datasets"],
+          a:1, why:"They give workloads short-lived, verifiable identities so you can stop hardcoding long-lived secrets that leak." },
+        { q:"A token never expires and the user who owned it left months ago. This is a:",
+          opts:["Healthy default","Orphaned credential","Scope","Claim"],
+          a:1, why:"An orphaned credential outlives its owner and keeps access open. Expiry and deprovisioning prevent it." }
+      ] },
+    ]
+  },
+  {
+    n:4, title:"Just-in-Time and Zero Trust",
+    lessons:[
+      { id:"m4-jit", title:"Just-in-time access", body:`
+        <h2 class="title">Just-in-time access</h2>
+        <figure class="scene">${ART.jitCard()}<figcaption>Like a hotel keycard: it works for your stay, then it is dead plastic.</figcaption></figure>
+        <p class="lede">Instead of standing access that sits around all year, you get permission only when you need it, for as long as you need it, and it expires on its own.</p>
+        <p>Watch the four phases below.</p>
+`, widget:"jitTimeline" },
+      { id:"m4-pep", title:"Policy enforcement points", body:`
+        <h2 class="title">The one checkpoint: the PEP</h2>
+        <figure class="scene">${ART.pep()}<figcaption>The policy enforcement point is the single guard every request must pass.</figcaption></figure>
+        <p class="lede">A policy enforcement point, or PEP, is the chokepoint where the decision actually gets made and enforced. Every request goes through it, checks the rulebook, and is allowed or stopped right there.</p>
+        <div class="aha">${ic('bulb')}<div>One guard, one place. That is what keeps the rules consistent and the audit trail clean.</div></div>
+` },
+      { id:"m4-zt", title:"Zero Trust, the access simulator", body:`
+        <h2 class="title">Zero Trust, never assume</h2>
+        <figure class="scene">${ART.zeroTrust()}<figcaption>Old way: one wall, everyone inside is trusted. Zero Trust: a guard at every door.</figcaption></figure>
+        <p class="lede">The old model trusted anyone inside the wall. Zero Trust drops that assumption and checks every request, every time, based on who is asking and the full context around them.</p>
+        <p>Try the simulator. Change the context and watch the decision move between allow, step up, and deny.</p>
+`, widget:"zeroTrustSim" },
+      { id:"m4-context", title:"Context-aware access", body:`
+        <h2 class="title">Context changes the answer</h2>
+        <figure class="scene">${ART.context()}<figcaption>Same person, same valid token. The context decides the outcome.</figcaption></figure>
+        <p class="lede">A valid token is not the end of the story. Where you are, what device you are on, the time of day, and how risky the action is can all tip the same request from yes to maybe to no.</p>
+` },
+      { id:"m4-finegrained", title:"Fine-grained controls for high-risk tasks", body:`
+        <h2 class="title">Turn the dial up for risky tasks</h2>
+        <figure class="scene">${ART.fineGrained()}<figcaption>Coarse access is "in or out." Fine-grained is "this row, this hour, this much."</figcaption></figure>
+        <p class="lede">Not every action deserves the same scrutiny. For high-risk moves, you tighten the controls: smaller scope, extra checks, narrower windows.</p>
+` },
+      { id:"m4-audit", title:"Real-time audit trails, then a check", body:`
+        <h2 class="title">Leave a trail you can follow</h2>
+        <figure class="scene">${ART.audit()}<figcaption>Every step leaves a footprint you can trace later.</figcaption></figure>
+        <p class="lede">Real-time audit trails record who did what, when, and from where, as it happens. When something looks off, you follow the footprints instead of guessing.</p>
+        <p>Quick check.</p>
+`, quiz:[
+        { q:"What problem does just-in-time access solve?",
+          opts:["Slow networks","Standing privilege that is always available to misuse","Too many datasets","Weak passwords"],
+          a:1, why:"JIT removes always-on admin rights and replaces them with temporary, approved, expiring access, so there is less privilege to steal." },
+        { q:"A policy enforcement point is best described as:",
+          opts:["A written policy document","The gate that intercepts a request and acts on the policy","An audit report","A type of dataset"],
+          a:1, why:"The PEP is the enforcement gate. The policy is the rule. Separating decision from enforcement keeps rules consistent everywhere." },
+        { q:"Which is a core principle of Zero Trust?",
+          opts:["Trust the internal network","Assume breach and verify every request","Share one admin token","Disable logging"],
+          a:1, why:"Zero Trust verifies explicitly, grants least privilege, assumes breach, and re-evaluates continuously. Nothing is trusted by location alone." },
+        { q:"Splitting a broad admin role into artifact.export, policy.modify, and deploy.approve mainly achieves:",
+          opts:["Faster inference","A smaller blast radius and separation of duties","More datasets","Cheaper storage"],
+          a:1, why:"Fine-grained entitlements limit what any single compromised credential can do and let you separate who builds from who approves." }
+      ] },
+    ]
+  },
+  {
+    n:5, title:"Trust Boundaries in Hybrid and Multicloud",
+    lessons:[
+      { id:"m5-boundary", title:"Defining trust boundaries", body:`
+        <h2 class="title">Drawing trust boundaries</h2>
+        <p class="lede">In a hybrid or multicloud setup, you draw lines around zones: identity, data, model, and tools. Crossing a line means proving yourself again. The map below is clickable, so explore each zone.</p>
+`, widget:"trustBoundaries" },
+      { id:"m5-broker", title:"Identity brokering across clouds", body:`
+        <h2 class="title">Identity brokering across clouds</h2>
+        <figure class="scene">${ART.brokering()}<figcaption>A currency exchange for identity: trade your home ID for a short-lived local pass.</figcaption></figure>
+        <p class="lede">A workload in one cloud often needs to call a service in another. Instead of copying a long-lived key across the border, a broker swaps its home identity for a short-lived credential on the other side.</p>
+        <div class="aha">${ic('warn')}<div>Storing one cloud's master key inside another is the tempting shortcut to avoid. The broker means nothing long-lived ever crosses.</div></div>
+` },
+      { id:"m5-gateway", title:"API gateways and identity-aware proxies", body:`
+        <h2 class="title">Gateways and identity-aware proxies</h2>
+        <figure class="scene">${ART.gateway()}<figcaption>One identity-aware gate stands in front of the services behind it.</figcaption></figure>
+        <p class="lede">An API gateway or identity-aware proxy is a single front door for many services. It checks identity once, up front, so each service behind it does not have to reinvent the guard.</p>
+` },
+      { id:"m5-micro", title:"Securing microservices across clusters", body:`
+        <h2 class="title">Every microservice carries a badge</h2>
+        <figure class="scene">${ART.microservices()}<figcaption>Lots of small services, each with its own verifiable badge.</figcaption></figure>
+        <p class="lede">In a microservices world, services constantly call each other. Each one carries its own identity, so every call can be checked, even deep inside the cluster.</p>
+` },
+      { id:"m5-tenant", title:"Multi-tenant access for shared models", body:`
+        <h2 class="title">One model, many tenants</h2>
+        <figure class="scene">${ART.tenant()}<figcaption>One building, but solid walls and separate locks between every unit.</figcaption></figure>
+        <p class="lede">When one shared model serves many customers, the danger is one tenant seeing another's data. Isolation has to be enforced where the data lives, keyed to a verified tenant identity, not just promised by the app.</p>
+` },
+      { id:"m5-gov", title:"Governance for hybrid systems, then a check", body:`
+        <h2 class="title">Governing the whole hybrid mess</h2>
+        <figure class="scene">${ART.hybridGov()}<figcaption>Different clouds, one shared rulebook over all of them.</figcaption></figure>
+        <p class="lede">Hybrid systems sprawl across clouds and clusters. Governance is the single rulebook that applies everywhere, so access does not drift into a different shape in each corner.</p>
+        <p>Quick check.</p>
+`, quiz:[
+        { q:"A trust boundary is best described as:",
+          opts:["A firewall brand","A line where control responsibility changes","A type of token","A dataset label"],
+          a:1, why:"Trust boundaries mark where identity assurance, policy, and logging expectations shift. Crossings are where you check identity and apply policy." },
+        { q:"What does an identity broker do across clouds?",
+          opts:["Deletes accounts","Translates trust from one provider into a credential another accepts","Trains models","Stores prompts"],
+          a:1, why:"A broker converts an identity from one environment into something the next environment trusts, while preserving subject, tenant, scope, and audit." },
+        { q:"Putting one identity-aware proxy in front of many AI services mainly gives you:",
+          opts:["Slower responses","Consistent authorization and a single control point","More passwords","Random access"],
+          a:1, why:"A gateway normalizes token validation, scope enforcement, tenant routing, and rate limits in one guarded layer, so each service does not reinvent it." },
+        { q:"In a shared multi-tenant model, the top priority is to keep separate:",
+          opts:["The model's color scheme","Each tenant's prompts, embeddings, and outputs","The server's clock","The font size"],
+          a:1, why:"Tenant isolation of context, embeddings, outputs, and admin actions is what prevents one customer from seeing another's data." }
+      ] },
+    ]
+  },
+  {
+    n:6, title:"Risk, Compliance, and Governance",
+    lessons:[
+      { id:"m6-compliance", title:"Compliance frameworks and IAM", body:`
+        <h2 class="title">Compliance, turning rules into checks</h2>
+        <figure class="scene">${ART.compliance()}<figcaption>A written rule only counts when it becomes a real, enforced check.</figcaption></figure>
+        <p class="lede">Compliance frameworks spell out who may access what, and how you prove it. IAM is how those words become actual gates, with evidence attached.</p>
+` },
+      { id:"m6-audit", title:"Auditing identity access in ML pipelines", body:`
+        <h2 class="title">Auditing the ML pipeline</h2>
+        <figure class="scene">${ART.pipelineAudit()}<figcaption>At every stage, you can say who touched the data and why.</figcaption></figure>
+        <p class="lede">An ML pipeline has many stages, and each one touches data. Auditing means you can trace, at every step, which identity reached in and what it did.</p>
+` },
+      { id:"m6-pac", title:"Policy-as-code", body:`
+        <h2 class="title">Policy as code</h2>
+        <figure class="scene">${ART.policyAsCode()}<figcaption>The rule is written as code that enforces itself, the same way every time.</figcaption></figure>
+        <p class="lede">Instead of access rules living in a document people forget, you write them as code. The system runs that code on every request, so the rule is applied consistently and you can review its history.</p>
+` },
+      { id:"m6-drift", title:"Managing IAM drift", body:`
+        <h2 class="title">Managing IAM drift</h2>
+        <figure class="scene">${ART.drift()}<figcaption>Tidy on day one. A year of one-off grants, and look at it.</figcaption></figure>
+        <p class="lede">Drift is the slow pileup of access over time: temporary grants that stuck around, departed people who kept keys. A one-time cleanup does not hold. You need controls that keep it tidy.</p>
+        <div class="aha">${ic('bulb')}<div>Recurring reviews, plus policy as code, plus drift detection, beat any heroic one-time scrub.</div></div>
+` },
+      { id:"m6-risk", title:"Identity risk scoring", body:`
+        <h2 class="title">Identity risk scoring</h2>
+        <figure class="scene">${ART.riskScore()}<figcaption>The needle climbs as the context gets riskier.</figcaption></figure>
+        <p class="lede">Risk scoring rates each request on the fly. A normal action from a known device scores low. An odd-hour, high-stakes move from a strange place scores high, and the system can ask for more before saying yes.</p>
+` },
+      { id:"m6-regulated", title:"Governance in regulated AI, then the finale", body:`
+        <h2 class="title">Governance in regulated AI</h2>
+        <figure class="scene">${ART.sod()}<figcaption>For the riskiest actions: two people, two keys. No solo moves.</figcaption></figure>
+        <p class="lede">In regulated settings, the control attaches to the risk of the action, not the seniority of the person. The most sensitive moves need separation of duties, an approval gate, and an immutable record, every single time.</p>
+        <p>Quick check.</p>
+`, quiz:[
+        { q:"Compliance evidence in AI IAM most often includes:",
+          opts:["Marketing brochures","Access approvals, privileged access records, reviews, and logs","Source code only","Nothing"],
+          a:1, why:"Auditors look for approvals, privileged access records, access reviews, and event logs. These translate technical controls into proof." },
+        { q:"Policy-as-code's deepest value is:",
+          opts:["It looks modern","Control logic that is reviewable, versioned, tested, and traceable","Faster GPUs","Fewer datasets"],
+          a:1, why:"Beyond automation, writing policy as code gives you review, version history, and testing, exactly what governance and incident response need." },
+        { q:"IAM drift is:",
+          opts:["A networking speed","The gap between approved policy and the access that actually exists","A type of model","A password rule"],
+          a:1, why:"Drift is when real, deployed access wanders from approved policy. You manage it by comparing desired state to actual state." },
+        { q:"A core principle for governing AI agents is that they should be:",
+          opts:["Ignored, since they are not people","Governed with the same care as privileged human users","Always blocked","Never logged"],
+          a:1, why:"Agents and service identities can influence outcomes at scale, so they get the same scrutiny, ownership, and review as privileged humans." }
+      ] },
+      { id:"finale", title:"You finished. Here is the big picture.", body:`
+        <div class="eyebrow">${ic('map')} The big picture</div>
+        <h2 class="title">You finished. Look how far you came.</h2>
+        <figure class="scene">${ART.finale()}<figcaption>Keys, badges, passports, clocks, and the three decisions. You can read every one now.</figcaption></figure>
+        <p class="lede">You started with two questions: who are you, and what may you do. Everything since has just been smarter ways to answer them, for people, agents, and services, at AI speed.</p>
+        <div class="big">The whole course in one breath: <b>give every actor its own identity, grant the least access needed, only when needed, and check every request in context.</b></div>
+        <p>That is the job of the gatekeeper. And now it is yours.</p>
+        <p style="text-align:center;margin-top:30px"><button class="btn" onclick="document.getElementById('content').scrollIntoView();go(0,0)">Back to the start</button></p>
+` },
+    ]
+  },
+];
+
+/* ----------------------------------------------------------
+   SCENARIO ASSESSMENTS  (end-of-module, applied reasoning)
+   verdicts: best | close | trap | wrong  (exactly one best)
+----------------------------------------------------------- */
+const SCENARIOS = {
+  1: [
+    {
+      title: `The agent that borrowed a human login`,
+      setup: `<p>A data scientist on your team builds an automated agent that pulls fresh data from three internal APIs every night and writes results into a shared model store. To get it running fast, she had it authenticate with her own personal login. It works.</p><p>Two weeks later she goes on leave, IT disables her dormant account per policy, and the nightly job silently breaks. Leadership asks you to set it up the right way.</p>`,
+      q: `What is the best way to give this nightly agent the access it needs?`,
+      opts: [
+        { t: `Create one shared service account that the whole data team uses for automation, and point the agent at that.`, verdict: `trap`,
+          note: `The most common shortcut, and it feels tidy, but a shared account erases attribution. When something breaks at 2am you cannot tell which agent or person did it, and you cannot revoke one job without breaking the rest. Shared accounts are the leftover-access problem waiting to happen.` },
+        { t: `Give the agent its own dedicated identity, scoped only to the three APIs and the one model store it touches, with credentials that rotate automatically.`, verdict: `best`,
+          note: `The agent is its own actor, so it gets its own identity tied to the workload, not borrowed from a human and not pooled with everyone else. Least privilege, clean attribution, and a lifecycle that does not die when a person goes on leave. This is the foundation everything else builds on.` },
+        { t: `Keep using the data scientist's login but ask IT to exempt her account from the dormant-account cleanup policy.`, verdict: `wrong`,
+          note: `This treats the symptom and creates a worse one. A human credential now never expires and silently powers production. If her account is ever phished, the attacker inherits a standing pipeline. You have welded a person's identity to a machine's job, the exact thing AI IAM exists to untangle.` },
+        { t: `Have the agent assume the data scientist's role at runtime so the access follows her permissions automatically.`, verdict: `close`,
+          note: `Delegation is a real pattern and avoiding hardcoded rights is a good instinct, but tying the agent to one person's role means its power shifts whenever her job shifts, and it still breaks when she leaves. Delegate to a workload identity, not to a human seat.` }
+      ],
+      takeaway: `When the actor is software, give it its own scoped identity. Borrowing a human login or sharing one team account both feel faster, but they destroy attribution and create access that outlives the reason it was granted.`
+    },
+    {
+      title: `Forty-one roles and counting`,
+      setup: `<p>Your platform started with three roles: viewer, engineer, admin. A year later you have forty-one, with names like engineer-prod-eu-readonly and engineer-staging-us-deploy. Every new project adds two or three more.</p><p>One teammate wants to fix the mess by consolidating the roles. Another says you need a different model entirely. The access rules people keep asking for sound like this: engineers can deploy, but only to staging, only during business hours, and only to non-sensitive datasets.</p>`,
+      q: `What does this situation actually call for?`,
+      opts: [
+        { t: `Consolidate the forty-one roles into a cleaner set of maybe fifteen well-named roles.`, verdict: `trap`,
+          note: `Tempting because the list gets shorter today, but it does nothing about why the list keeps growing. The moment a request names a new environment, time window, or sensitivity level, you are minting roles again. You will be back in this meeting in six months with twenty-two roles.` },
+        { t: `Keep RBAC but give engineers one broad role and rely on people to use it responsibly.`, verdict: `wrong`,
+          note: `Trading role sprawl for over-permission is the opposite failure. Now everyone can deploy anywhere anytime, and your audit story is "we trust them." That collapses the instant a sensitive dataset or a regulator enters the picture.` },
+        { t: `Move the deploy decision to ABAC, where access is computed from attributes like environment, time of day, and data sensitivity instead of a pre-baked role name.`, verdict: `best`,
+          note: `The requests are not about roles, they are about conditions. Environment, hour, and sensitivity are attributes. ABAC expresses "engineer plus staging plus business hours plus non-sensitive equals allow" in one rule, with no new role per combination. The explosion was a sign you were forcing attribute logic into role names.` },
+        { t: `Adopt ABAC and delete RBAC entirely so all access everywhere is attribute-based.`, verdict: `close`,
+          note: `Right tool, overcorrected. ABAC shines for conditional, context-heavy decisions like this, but coarse access (is this person an engineer at all) is served fine by a simple role. Mature shops run both. Ripping out RBAC wholesale adds complexity you do not need.` }
+      ],
+      takeaway: `Role explosion is a symptom, not the disease. When access depends on conditions like environment, time, and sensitivity, those are attributes, and ABAC captures them in one rule instead of a new role per combination. Match the model to the shape of the decision.`
+    }
+  ],
+  2: [
+    {
+      title: `Three hospitals, three countries, one model`,
+      setup: `<p>Three hospitals, one in the US, one in Germany, one in Brazil, want to jointly train a diagnostic model. Each country's law forbids raw patient data from leaving its borders. Federated learning solves the data-movement problem: each hospital trains locally and shares only model updates.</p><p>Now you have to answer the identity question. How do the three sites and the central aggregator prove who they are and trust each other's updates?</p>`,
+      q: `What is the soundest identity approach for this collaboration?`,
+      opts: [
+        { t: `Stand up one central identity provider, give every hospital a login to it, and have all three authenticate there.`, verdict: `trap`,
+          note: `Centralizing looks clean, but you just created a single authority that all three sovereign institutions must place above their own. Across borders that rarely flies legally or politically, and it makes one system the master key to the entire consortium. Federation exists so each org keeps its own identity authority.` },
+        { t: `Treat each hospital as its own trust domain with its own identity provider, and federate trust so updates carry a verifiable, attributable identity from their home institution.`, verdict: `best`,
+          note: `Each site stays sovereign over its identities, which respects the legal reality, and federation lets the aggregator verify that an update genuinely came from Hospital B without B joining anyone else's directory. Attribution and trust, no central master. This is the whole point of federated identity.` },
+        { t: `Issue all three hospitals a single shared credential for the aggregator so updates are simple to accept.`, verdict: `wrong`,
+          note: `A shared credential means you can never prove which hospital sent which update, which destroys auditability in a medical-legal setting and lets a compromise at one site impersonate all three. Convenience here directly undermines the compliance you are obligated to demonstrate.` },
+        { t: `Skip identity federation and put all three sites on a private VPN, trusting anything inside the tunnel.`, verdict: `close`,
+          note: `A secure channel is useful, but network location is not identity. "Inside the tunnel" tells you nothing about which hospital or workload sent an update, and it is classic perimeter thinking. Federated learning still needs federated identity on top of the secure channel, not instead of it.` }
+      ],
+      takeaway: `Federated learning keeps the data home. Federated identity keeps the trust home too. Let each organization stay its own identity authority and broker trust between them, rather than forcing everyone under one central login or, worse, one shared credential.`
+    },
+    {
+      title: `The token that went too deep`,
+      setup: `<p>A user kicks off a report. The request hits Service A (the report builder), which calls Service B (the data warehouse), which calls Service C (a sensitive billing API). To keep things simple, the team passes the user's original access token straight down the chain so every service acts as the user.</p><p>It works, until a security review flags that Service B, which only needed to read warehouse rows, is holding a token that can also reach billing.</p>`,
+      q: `What is the right correction?`,
+      opts: [
+        { t: `Leave it as designed. The token belongs to the user, so every service acting on the user's behalf should carry it.`, verdict: `trap`,
+          note: `This is the confused-deputy setup. One broad token down the chain means every hop inherits the union of all permissions, so a bug in the read-only warehouse service can reach billing. "It is the user's token" is true and beside the point. The risk is the unnecessary power riding along.` },
+        { t: `Use token exchange so each hop swaps its incoming token for a new one narrowed to exactly what the next service needs and addressed to that service.`, verdict: `best`,
+          note: `Each service presents a token scoped to its job and intended only for the next recipient. The warehouse service never holds billing access, so a compromise there cannot reach billing. You keep "on behalf of the user" while cutting the blast radius at every step. This is what token exchange is for.` },
+        { t: `Have Service A call all three services itself so the token never gets passed deeper than one hop.`, verdict: `close`,
+          note: `Flattening the call graph limits propagation, but it forces A to hold the superset of every downstream permission and turns A into the new over-privileged choke point. You moved the concentration of power rather than reducing it, and coupled services that were better off independent.` },
+        { t: `Let Service B and C trust Service A completely, accepting whatever A forwards once A has authenticated the user.`, verdict: `wrong`,
+          note: `Transitive blind trust means one compromised service vouches for the entire chain. The zero-trust instinct is that every service verifies the token it receives on its own terms. Telling B and C to stop checking removes the very guardrail the review asked you to add.` }
+      ],
+      takeaway: `Carrying one broad token through a chain of services is the confused-deputy trap: every hop inherits power it does not need. Token exchange hands each service a token scoped and addressed to its specific job, so a problem in one link cannot unlock the others.`
+    }
+  ],
+  3: [
+    {
+      title: `A valid token is not a login`,
+      setup: `<p>Your team builds a new internal portal. To log users in, a developer takes the OAuth access token the user already holds for the analytics API, reads the user id embedded in it, and treats a valid token as proof of who the user is. It demos perfectly.</p><p>During a security review, an architect says this is a known anti-pattern and must change before launch.</p>`,
+      q: `Why is the architect right, and what is the fix?`,
+      opts: [
+        { t: `There is no real problem. The access token is signed and contains the user's id, so trusting it for login is reasonable.`, verdict: `trap`,
+          note: `Signed and contains an id are both true, which is what makes this tempting. But an access token answers "what may the bearer do," not "who is present right now." It can be issued to a service, replayed, or minted for a different audience. Using it as proof of identity is the classic OAuth-for-authentication mistake.` },
+        { t: `Use OpenID Connect and rely on the ID token for identity, keeping the access token only for authorizing calls to the analytics API.`, verdict: `best`,
+          note: `OIDC sits on top of OAuth precisely to answer the authentication question. The ID token means "who is this user, verified by the provider, for this app," while the access token stays in its lane authorizing API calls. Right token for the right question. That is the entire reason OIDC exists.` },
+        { t: `Keep using the access token but add more scopes so it carries enough information to identify the user.`, verdict: `wrong`,
+          note: `Piling scopes onto an access token does not turn it into an identity assertion, it just makes an over-permissioned token. Scopes describe permissions, not a verified login event. You would be making the posture worse while believing you fixed the design.` },
+        { t: `Have the portal call the analytics API's user-info endpoint with the access token and treat a successful response as login.`, verdict: `close`,
+          note: `Closer, because you are at least asking an authority rather than trusting the raw token, and OIDC's userinfo endpoint works this way. But bolting it on without the OIDC ID token and its audience and nonce protections leaves gaps like token substitution. Use the actual OIDC flow, not an ad hoc lookup.` }
+      ],
+      takeaway: `OAuth authorizes, OIDC authenticates. An access token tells you what the bearer may do, not who they are. When you need to prove identity, reach for the OIDC ID token rather than reading a user id off an access token and calling it a login.`
+    },
+    {
+      title: `The key that lived in a config file`,
+      setup: `<p>Your inference service in cluster A calls a model-hosting service in cluster B. Today that call is authenticated with a long-lived API key that was pasted into a config file eighteen months ago.</p><p>A near-miss (the key showed up in a log export) has everyone agreed it must change. Three fixes are on the table.</p>`,
+      q: `Which approach best reduces the real risk here?`,
+      opts: [
+        { t: `Rotate the long-lived key on a 90-day schedule and store it in a secrets manager instead of the config file.`, verdict: `close`,
+          note: `A genuine improvement, and do not dismiss it, but it still leaves a static secret valid for 90 days if it leaks. You shrank the window and tidied storage, you did not remove the class of problem. Right direction, half the distance.` },
+        { t: `Give each service a short-lived, automatically issued workload identity (the SPIFFE and SPIRE pattern) scoped to this call, so there is no long-lived shared secret to leak.`, verdict: `best`,
+          note: `Short-lived identities the platform mints and rotates on its own change the math. A credential that lives minutes and is bound to the workload is far less useful to an attacker, and a leaked one expires before it can be widely abused. You also get strong service identity instead of a shared password. This is what SPIFFE and SPIRE were built for.` },
+        { t: `Keep the key but restrict the model-hosting service to only accept calls from cluster A's IP range.`, verdict: `wrong`,
+          note: `Network allow-listing is fine defense in depth, but it is not identity and does nothing about the leaked key. Anyone who can route from that range, including a compromised pod in cluster A, still wins. The actual credential problem is untouched.` },
+        { t: `Encrypt the API key in the config file so it is no longer readable in plain text.`, verdict: `trap`,
+          note: `Feels like an upgrade, but the service still decrypts and uses the key at runtime, and it is still long-lived. The key that leaked into a log export would leak again the same way once it is in memory and in use. Encryption at rest does not touch lifetime or blast radius, the real issues.` }
+      ],
+      takeaway: `Rotating and hiding a long-lived secret shrinks the problem. Replacing it with a short-lived, auto-issued workload identity removes the class of problem. When a credential leaks, the question that matters is how long it stays useful, and short-lived identities answer it best.`
+    }
+  ],
+  4: [
+    {
+      title: `Standing access, just in case`,
+      setup: `<p>An engineer is on call one week in six. During that week she occasionally needs production access to restart a stuck model-serving job. The rest of the time she does not touch prod at all.</p><p>The current setup gives her standing production admin access year-round so she is always ready. You are asked to tighten this without making on-call painful.</p>`,
+      q: `What is the best design?`,
+      opts: [
+        { t: `Keep the standing admin access but turn on detailed logging so every action in prod is recorded.`, verdict: `trap`,
+          note: `Logging is necessary but it is detection, not prevention. Standing admin access sits there 365 days a year as attack surface, and if her account is compromised in week four when she is not even on call, the logs will faithfully record the breach you failed to prevent. You want the access to not exist when it is not needed.` },
+        { t: `Grant production access just in time: she requests elevation when a real incident hits, it is approved against her on-call schedule, and it expires automatically after a short window.`, verdict: `best`,
+          note: `The access exists only during genuine need and then evaporates. Her blast radius outside that window is zero, the elevation is tied to a reason and a clock, and you still get a clean trail of when and why she had power. Exactly the problem JIT solves.` },
+        { t: `Create a shared break-glass admin account the whole on-call rotation uses when they need prod.`, verdict: `wrong`,
+          note: `A shared account means you cannot tell who restarted what, the password becomes a standing secret several people know, and offboarding anyone forces a team-wide rotation. Break-glass has a place as a rare last resort, but as the everyday on-call path it reintroduces every shared-credential problem at once.` },
+        { t: `Give her access on demand when she asks, but make the grant permanent once approved so she does not have to ask again next rotation.`, verdict: `close`,
+          note: `The request-and-approve instinct is right, but dropping the expiry turns JIT back into standing access by a slower route. After two rotations she is permanently privileged again. The auto-expiry is not a detail, it is the mechanism.` }
+      ],
+      takeaway: `The safest permission is the one that does not exist when it is not needed. Just-in-time access grants power for a specific reason, tied to a clock, and takes it back automatically. Logging the misuse of standing access is not the same as preventing it.`
+    },
+    {
+      title: `Right credential, wrong everything else`,
+      setup: `<p>A senior ML engineer with a valid token and a clean history requests to export a full set of model weights. The credential checks out completely.</p><p>But the request comes from a device the system has never seen, from a country she has never logged in from, at 3am her time, and exporting raw weights is one of the highest-risk actions in your system. Your access system has to decide in real time.</p>`,
+      q: `What should a zero-trust system do here?`,
+      opts: [
+        { t: `Allow it. The token is valid and she is a trusted senior engineer with legitimate reasons to touch weights.`, verdict: `trap`,
+          note: `Perimeter thinking with a friendly face. "Valid token plus trusted person" is exactly the assumption zero trust refuses to make on its own. A valid credential is consistent with both a normal night and a stolen laptop. Identity alone, with this much anomalous context around a high-risk action, is not enough to wave through.` },
+        { t: `Evaluate the request on its full context and require step-up verification (a fresh strong factor) before allowing the sensitive export, rather than a flat yes or no.`, verdict: `best`,
+          note: `Zero trust scores every request on context, not just on whether a token exists. New device plus new country plus odd hour plus a high-risk action is precisely when you ask for more proof. Step-up lets a real engineer confirm it is her in seconds, while stopping a thief who only has the token. You neither blindly trust nor needlessly block.` },
+        { t: `Block her account entirely and open a security incident, since the context is so abnormal.`, verdict: `close`,
+          note: `Your risk radar is calibrated right, and for the very highest tiers a hard stop can be correct. But a flat block on a possibly legitimate senior engineer doing real work is an expensive overcorrection that trains people to route around the system. Step-up resolves the ambiguity at far lower cost. Reserve the hard block for when step-up also fails.` },
+        { t: `Allow the login but quietly reduce her permissions and let the export through with a warning logged for review.`, verdict: `wrong`,
+          note: `Letting the high-risk export complete and reviewing later means the weights are already gone if this was theft. Context-aware access has to act before the sensitive action, not annotate it afterward. A warning in a log is not an access decision.` }
+      ],
+      takeaway: `Zero trust judges the request, not just the requester. A valid token plus anomalous context around a high-risk action is the textbook moment for step-up verification: enough friction to stop an imposter, little enough to wave a real person through. Allowing on trust and blocking outright are both blunter than the situation deserves.`
+    }
+  ],
+  5: [
+    {
+      title: `A key from one cloud, stored in another`,
+      setup: `<p>A workload running in AWS needs to call a service that lives in Google Cloud. The team's first instinct is to create a Google service account, download its long-lived JSON key, and store that key in AWS so the workload can authenticate to Google.</p><p>A platform architect pushes back and says there is a better pattern that avoids holding a foreign cloud's static key at all.</p>`,
+      q: `What is the strongest way to let the AWS workload call the GCP service?`,
+      opts: [
+        { t: `Download the GCP service account key and store it securely in AWS Secrets Manager so the workload can read it when needed.`, verdict: `trap`,
+          note: `The single most common cross-cloud shortcut, and exactly what the architect is warning against. A downloaded service account key is a long-lived secret that, if it leaks, grants standing access to GCP from anywhere on earth, secrets manager or not. You created a portable master key for the other cloud.` },
+        { t: `Use workload identity federation so AWS's own identity for the workload is exchanged, through a broker, for a short-lived GCP credential, with no static GCP key stored anywhere.`, verdict: `best`,
+          note: `The workload proves who it is with its native AWS identity, a broker trusts that and issues a short-lived GCP token scoped to the call. Nothing long-lived crosses the boundary and there is no foreign key to leak. This identity-brokering pattern is the clean answer to talking across clouds.` },
+        { t: `Make the GCP service reachable with a simple shared API key passed in the request header.`, verdict: `wrong`,
+          note: `A shared API key is a long-lived bearer secret with no real identity behind it, and it spreads into code, logs, and screenshots. You swapped one static-secret problem for a flimsier one and lost the ability to say which workload made which call.` },
+        { t: `Set up a site-to-site VPN between the two clouds and treat any traffic arriving over it as trusted.`, verdict: `close`,
+          note: `Private connectivity is reasonable to want, but a tunnel secures the path, not the identity. "Came over the VPN" does not tell GCP which workload is calling or whether to allow it. You still need brokered identity on top, so the VPN alone does not solve the access question.` }
+      ],
+      takeaway: `Talking across clouds should not mean storing one cloud's long-lived key inside another. Identity brokering and workload identity federation exchange a workload's native identity for a short-lived credential on the other side, so no portable master key ever sits where it can leak.`
+    },
+    {
+      title: `When Tenant A sees Tenant B`,
+      setup: `<p>Your company serves one shared large model to many customer tenants. Each tenant also has its own private vector store of documents. A bug report comes in: under certain requests, Tenant A's query is returning snippets that belong to Tenant B.</p><p>Investigation shows the app passes a tenant id with each request, but the data layer serves whatever tenant id it is told, and a flaw in the app sometimes sends the wrong one.</p>`,
+      q: `Where and how should tenant isolation actually be enforced?`,
+      opts: [
+        { t: `Fix the specific app bug that sends the wrong tenant id, since that is what caused this leak.`, verdict: `trap`,
+          note: `You must fix the bug, but stopping there leaves the real weakness: the data layer trusts whatever tenant id the app asserts. The next app bug, or a compromised app, leaks data the same way. Treating a cross-tenant leak as a one-off application bug underestimates it.` },
+        { t: `Bind the tenant to the caller's verified identity (a tenant claim in the token) and enforce that claim at the data layer, so a request can only ever reach its own tenant's store regardless of what the app passes.`, verdict: `best`,
+          note: `Isolation has to live where the data is and be driven by a verified identity, not by an id the app hands over. If authorization at the vector store is keyed to the tenant claim in the caller's token, a buggy or hostile app physically cannot reach another tenant's data. You enforce the boundary at the boundary.` },
+        { t: `Give every tenant their own separate copy of the model and their own isolated service.`, verdict: `close`,
+          note: `Per-tenant isolation does work, and for very high assurance some shops do exactly this, but it abandons the shared-model design you were asked to secure and multiplies cost. More to the point, it does not fix the habit of trusting an app-supplied tenant id, which would still bite you within each tenant's own scopes. Right idea, wrong altitude.` },
+        { t: `Filter the results in the user interface so each tenant only sees their own snippets in the final display.`, verdict: `wrong`,
+          note: `Filtering at the UI means the wrong data was already retrieved and crossed the boundary before being hidden. Anyone inspecting the response, the traffic, or the logs sees the leak. Authorization that happens after the data is fetched is not isolation, it is cosmetics.` }
+      ],
+      takeaway: `In a shared multi-tenant system, isolation must be enforced at the data layer and driven by a verified tenant identity in the token, not by an id the application promises to pass correctly. Enforce the boundary where the data lives, not in the UI and not on the honor system.`
+    }
+  ],
+  6: [
+    {
+      title: `The audit nobody could explain`,
+      setup: `<p>An access audit of your ML platform turns up a mess. Dozens of identities hold permissions nobody can explain, granted over two years of one-off requests, departed contractors, and temporary elevations that were never revoked.</p><p>Leadership wants it fixed. One director says do a big cleanup and revoke everything stale. You suspect a one-time scrub will not hold.</p>`,
+      q: `What is the right response to this situation?`,
+      opts: [
+        { t: `Run a one-time cleanup, revoke everything that looks stale, and consider the problem solved.`, verdict: `trap`,
+          note: `Satisfying, and you do need the cleanup, but on its own it resets the clock without changing the process that filled it. Six months of fresh one-off grants and forgotten elevations and you are right back here. Treating drift as a one-time event rather than an ongoing force is the core mistake.` },
+        { t: `Treat this as IAM drift: do the cleanup, then add controls so it cannot silently recur, such as policy-as-code for grants, periodic access recertification, and automated drift detection against a baseline.`, verdict: `best`,
+          note: `Drift is continuous, so the fix has to be continuous. Define intended access as code, recertify on a schedule, and have tooling flag when reality diverges from the baseline. The cleanup handles today, the controls handle every day after. Governance rather than firefighting.` },
+        { t: `Document the current access as the new approved baseline so at least the records match reality.`, verdict: `wrong`,
+          note: `This makes the finding disappear on paper while preserving every over-grant in practice. You would be blessing the contractors' leftover access and the never-revoked elevations as official. Reconciling the documentation to the drift is the opposite of fixing it.` },
+        { t: `Set everything to expire and require people to re-request any access they still need.`, verdict: `close`,
+          note: `Forcing re-justification through expiry is a strong instinct and close to right, but as a standalone move it is disruptive, and without policy-as-code and recurring recertification behind it, the re-granted access just begins drifting again from day one. Pair expiry with ongoing governance, do not treat the reset as the whole answer.` }
+      ],
+      takeaway: `IAM drift is a continuous force, so a one-time cleanup cannot beat it. Pair the scrub with controls that keep working: intended access defined as code, recurring recertification, and drift detection against a baseline. And never fix a finding by redefining the drift as the new normal.`
+    },
+    {
+      title: `Trusted, senior, and about to act alone`,
+      setup: `<p>In a regulated environment, retraining a production model on a dataset that contains regulated personal data is one of the most sensitive actions possible. A highly trusted, senior data scientist, with a spotless record and every technical permission, initiates exactly this retraining on her own, late in a release crunch.</p><p>Your governance system has to decide how to treat it.</p>`,
+      q: `What should govern whether this proceeds?`,
+      opts: [
+        { t: `Allow it. She is senior, trusted, and technically authorized, and the deadline is real.`, verdict: `trap`,
+          note: `Seniority and trust are not controls, and in regulated AI that distinction is the whole game. Governance exists so the most sensitive actions do not rest on any one person's standing, however good. Deadlines are exactly when shortcuts get taken, which is when controls matter most.` },
+        { t: `Require enforced separation of duties and a policy-driven approval gate, plus an immutable audit trail, so a high-risk action like this cannot be done solo regardless of who is asking.`, verdict: `best`,
+          note: `Identity risk scoring flags the action as high-risk on its own merits, and policy-as-code then enforces that retraining on regulated data needs a second approver and leaves a tamper-evident record. The control is tied to the risk of the action, not the rank of the actor. That is what holds up in front of a regulator.` },
+        { t: `Let it proceed but make sure the action is logged in detail for the auditors to review later.`, verdict: `wrong`,
+          note: `Logging is evidence, not enforcement. If a solo retraining on regulated data should not happen, recording that it happened does not meet the obligation, it just documents the gap. Compliance here means the system prevents the unapproved action, not that it can describe it afterward.` },
+        { t: `Raise her risk score so future sensitive actions require approval, and allow this one through since it is already in motion.`, verdict: `close`,
+          note: `Adaptive risk scoring is real and good, and tightening future access is the right reflex. But carving out an exception for the action in front of you, the most sensitive one, defeats the purpose. The gate has to apply now, to this retraining, not just to the next person who tries.` }
+      ],
+      takeaway: `In regulated AI, the control attaches to the risk of the action, not the seniority of the person. High-risk actions like retraining on regulated data should require enforced separation of duties and policy-driven approval every time, with an immutable trail. Trust and logging are not substitutes for a gate that actually stops the action.`
+    }
+  ]
+};
+
+MODULES.forEach(function(m){
+  if(typeof m.n !== 'number') return;
+  var set = SCENARIOS[m.n];
+  if(!set) return;
+  var target = m.lessons.find(function(l){ return l.quiz; }) || m.lessons[m.lessons.length-1];
+  target.scenarios = set;
+});
+
+const GLOSSARY = [
+  ["Authentication","Proving who you are. Showing the badge at the door."],
+  ["Authorization","Deciding what you are allowed to do once your identity is known."],
+  ["IAM","Identity and Access Management. The whole system that answers who you are and what you may do."],
+  ["Service account","A non-human identity for an automated job or pipeline that runs without a person present."],
+  ["AI agent","A semi-autonomous workflow that can call tools and act on its own, so it needs its own controlled identity."],
+  ["Workload identity","A verifiable identity for a running piece of software, like a container or service, instead of a static secret."],
+  ["RBAC","Role-Based Access Control. Permissions attached to a job role."],
+  ["ABAC","Attribute-Based Access Control. Permissions decided by context like sensitivity, environment, and risk."],
+  ["Least privilege","Granting the smallest access that gets the job done, so a compromise stays small."],
+  ["Zero Trust","An approach that trusts no request by default and verifies every one explicitly."],
+  ["Federation","Letting an identity from one trusted source be accepted by another system or organization."],
+  ["SSO","Single Sign-On. Authenticate once and that proof opens many connected tools."],
+  ["Delegation","Turning one identity into a temporary, narrow credential another component can use on its behalf."],
+  ["Token","A short-lived digital pass that proves identity or carries permission to call an API."],
+  ["Scope","The action surface a token allows. What it may do, like infer or export."],
+  ["Claim","A piece of context inside a token, like role, tenant, project, or environment."],
+  ["OAuth 2.0","A standard that lets an app get scoped API access without seeing your password."],
+  ["OpenID Connect","An identity layer on top of OAuth that standardizes proving who you are."],
+  ["SPIFFE","An open standard that gives each software workload a verifiable identity. A passport for software."],
+  ["SPIRE","The system that issues, attests, and rotates SPIFFE identities. The passport office."],
+  ["mTLS","Mutual TLS. A connection where both sides authenticate each other and traffic is encrypted."],
+  ["JIT access","Just-in-Time access. Elevated permission granted only when needed and only for a short window."],
+  ["PEP","Policy Enforcement Point. The gate that intercepts a request and acts on the policy."],
+  ["Trust boundary","A line where control responsibility, identity assurance, and policy expectations change."],
+  ["Multi-tenant","One shared system serving many separate customers, who must never see each other's data."],
+  ["Policy-as-code","Writing access rules as machine-readable code so they can be reviewed, versioned, and tested."],
+  ["IAM drift","The gap that opens between approved policy and the access that actually exists."],
+  ["Risk scoring","Ranking identities by likelihood and impact of unsafe behavior, to trigger stronger controls."],
+  ["Separation of duties","Ensuring the person who builds something is not the only one who can approve it."],
+];
+
+/* flatten lessons for linear navigation */
+const FLAT = [];
+MODULES.forEach((m,mi)=> m.lessons.forEach((l,li)=> FLAT.push({mi,li,id:l.id})));
+const done = new Set();
+let cur = {mi:0,li:0};
+
+/* ----------------------------------------------------------
+   NAV RENDER
+----------------------------------------------------------- */
+function buildNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = MODULES.map((m,mi)=>{
+    const lessons = m.lessons.map((l,li)=>{
+      return `<div class="lesson-link" data-mi="${mi}" data-li="${li}" id="ln-${mi}-${li}">
+        <span class="dot">&#10003;</span><span>${l.title}</span></div>`;
+    }).join("");
+    const label = (m.n==="Start") ? "Start" : ("Module "+m.n);
+    return `<div class="mod" id="mod-${mi}">
+      <div class="mod-head" data-mi="${mi}">
+        <span class="num">${m.n==="Start"?"&#9733;":m.n}</span>
+        <span>${m.title}</span>
+        <span class="chev">&#9656;</span>
+      </div>
+      <div class="lessons">${lessons}</div>
+    </div>`;
+  }).join("");
+
+  nav.querySelectorAll('.mod-head').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const mi = +h.dataset.mi;
+      document.getElementById('mod-'+mi).classList.toggle('open');
+    });
+  });
+  nav.querySelectorAll('.lesson-link').forEach(a=>{
+    a.addEventListener('click',()=>{ go(+a.dataset.mi,+a.dataset.li); closeMobile(); });
+  });
+}
+
+/* ----------------------------------------------------------
+   PAGE RENDER
+----------------------------------------------------------- */
+function go(mi,li){
+  cur = {mi,li};
+  const mod = MODULES[mi];
+  const lesson = mod.lessons[li];
+  const idx = FLAT.findIndex(f=>f.mi===mi&&f.li===li);
+
+  // mark done
+  done.add(mi+"-"+li);
+
+  const c = document.getElementById('content');
+  let html = lesson.body;
+
+  if(lesson.widget){ html += `<div id="widget-mount"></div>`; }
+  if(lesson.quiz){ html += renderQuizShell(lesson.quiz); }
+  if(lesson.scenarios){ html += renderScenarios(lesson.scenarios); }
+
+  // pager
+  const prev = idx>0 ? FLAT[idx-1] : null;
+  const next = idx<FLAT.length-1 ? FLAT[idx+1] : null;
+  html += `<div class="pager">
+    ${prev?`<button class="btn ghost prev" onclick="go(${prev.mi},${prev.li})"><small>Previous</small>${MODULES[prev.mi].lessons[prev.li].title}</button>`:`<span style="flex:1"></span>`}
+    ${next?`<button class="btn next" onclick="go(${next.mi},${next.li})"><small>Next up</small>${MODULES[next.mi].lessons[next.li].title}</button>`:`<span style="flex:1"></span>`}
+  </div>`;
+
+  c.innerHTML = html;
+  c.scrollTop = 0;
+  window.scrollTo(0,0);
+  document.querySelector('.main').scrollTop = 0;
+
+  // crumb
+  const label = (mod.n==="Start")?"Orientation":("Module "+mod.n+" · "+mod.title);
+  document.getElementById('crumb').textContent = label;
+
+  // widget
+  if(lesson.widget && WIDGETS[lesson.widget]){
+    WIDGETS[lesson.widget](document.getElementById('widget-mount'));
+  }
+  if(lesson.quiz){ wireQuiz(lesson.quiz); }
+  if(lesson.scenarios){ wireScenarios(lesson.scenarios); }
+
+  refreshNav();
+  updateProgress();
+}
+
+function refreshNav(){
+  document.querySelectorAll('.lesson-link').forEach(a=>{
+    const key = a.dataset.mi+"-"+a.dataset.li;
+    a.classList.toggle('done', done.has(key));
+    a.classList.toggle('current', (+a.dataset.mi===cur.mi && +a.dataset.li===cur.li));
+  });
+  document.querySelectorAll('.mod-head').forEach(h=>{
+    h.classList.toggle('active', +h.dataset.mi===cur.mi);
+  });
+  const m = document.getElementById('mod-'+cur.mi);
+  if(m) m.classList.add('open');
+}
+
+function updateProgress(){
+  const pct = Math.round(done.size / FLAT.length * 100);
+  document.getElementById('progFill').style.width = pct+"%";
+  document.getElementById('progPct').textContent = pct+"%";
+}
+
+/* ----------------------------------------------------------
+   QUIZ
+----------------------------------------------------------- */
+function renderQuizShell(quiz){
+  let h = `<div class="widget"><div class="widget-h"><span class="badge">Quick check</span><h4>Test yourself</h4></div>
+    <p class="widget-sub">No grades, no pressure. Pick an answer to see why it is right or wrong.</p>`;
+  quiz.forEach((q,qi)=>{
+    h += `<div class="quiz-q" data-qi="${qi}"><div class="qtext">${qi+1}. ${q.q}</div>`;
+    q.opts.forEach((o,oi)=>{
+      h += `<button class="opt" data-qi="${qi}" data-oi="${oi}">${o}</button>`;
+    });
+    h += `<div class="explain" id="exp-${qi}"></div></div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+function wireQuiz(quiz){
+  document.querySelectorAll('.opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const qi=+btn.dataset.qi, oi=+btn.dataset.oi;
+      const q = quiz[qi];
+      const group = document.querySelectorAll(`.opt[data-qi="${qi}"]`);
+      group.forEach(b=>{ b.classList.add('locked'); });
+      if(oi===q.a){ btn.classList.add('correct'); }
+      else { btn.classList.add('wrong'); group[q.a].classList.add('correct'); }
+      const exp = document.getElementById('exp-'+qi);
+      exp.textContent = q.why;
+      exp.classList.add('show');
+    });
+  });
+}
+
+
+/* ----------------------------------------------------------
+   SCENARIO ASSESSMENTS (render + wire)
+----------------------------------------------------------- */
+const SC_LABEL = { best:'Best call', close:'Defensible, weaker', trap:'Tempting trap', wrong:'Misses the point' };
+const SC_MARK  = { best:'\u2713', close:'\u2248', trap:'!', wrong:'\u2715' };
+const SC_LETTER = ['A','B','C','D','E'];
+
+function renderScenarios(scn){
+  let h = `<div class="widget sc-wrap"><div class="widget-h"><span class="badge sc-badge">Scenario challenge</span><h4>Apply it under pressure</h4></div>
+    <p class="widget-sub">These are not recall questions. Read each situation, weigh the trade-offs, and commit to the call you would actually make. More than one option looks right. Only one is best.</p>`;
+  scn.forEach((s,si)=>{
+    h += `<div class="scenario" data-si="${si}">
+      <div class="sc-case">
+        <div class="sc-num">Case ${si+1}</div>
+        <h5 class="sc-title">${s.title}</h5>
+        <div class="sc-setup">${s.setup}</div>
+        <div class="sc-q">${s.q}</div>
+      </div>
+      <div class="sc-opts">`;
+    s.opts.forEach((o,oi)=>{
+      h += `<button class="sc-opt" data-si="${si}" data-oi="${oi}"><span class="sc-let">${SC_LETTER[oi]}</span><span class="sc-ot">${o.t}</span></button>`;
+    });
+    h += `</div><div class="sc-reveal" id="rev-${si}"></div></div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+
+function wireScenarios(scn){
+  document.querySelectorAll('.sc-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const si=+btn.dataset.si, oi=+btn.dataset.oi;
+      const rev=document.getElementById('rev-'+si);
+      if(rev.classList.contains('show')) return;
+      const s=scn[si];
+      const group=document.querySelectorAll('.sc-opt[data-si="'+si+'"]');
+      group.forEach((b,i)=>{
+        b.classList.add('locked','vd-'+s.opts[i].verdict);
+        b.insertAdjacentHTML('beforeend','<span class="sc-vtag vt-'+s.opts[i].verdict+'">'+SC_LABEL[s.opts[i].verdict]+'</span>');
+      });
+      btn.classList.add('sc-chosen');
+      let h='<div class="sc-analysis"><div class="sc-ah">Why each option lands where it does</div>';
+      s.opts.forEach((o,i)=>{
+        const picked = (i===oi)?' you-picked':'';
+        h += '<div class="sc-line vd-'+o.verdict+picked+'"><span class="sc-mk mk-'+o.verdict+'">'+SC_MARK[o.verdict]+'</span><div class="sc-note"><b>'+SC_LETTER[i]+'.</b> '+o.note+(i===oi?' <em class="sc-you">(your pick)</em>':'')+'</div></div>';
+      });
+      h += '<div class="sc-take"><span class="sc-take-l">The takeaway</span>'+s.takeaway+'</div></div>';
+      rev.innerHTML=h; rev.classList.add('show');
+    });
+  });
+}
+
+/* ----------------------------------------------------------
+   WIDGETS
+----------------------------------------------------------- */
+const WIDGETS = {};
+
+/* --- Mental model --- */
+WIDGETS.mentalModel = function(el){
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Mental model</span><h4>Every access decision, in one picture</h4></div>
+    <p class="widget-sub">A request travels from an identity, through a decision point, to a resource. Hover the pieces.</p>
+    <svg viewBox="0 0 700 200" style="width:100%;height:auto" font-family="var(--sans)">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" fill="#E8C87A"/>
+        </marker>
+      </defs>
+      <g class="mm" >
+        <rect x="20" y="70" width="150" height="62" rx="12" fill="#33205A" stroke="#E8C87A" stroke-width="1.5"/>
+        <text x="95" y="95" text-anchor="middle" fill="#F5F0E8" font-size="14" font-weight="700">Identity</text>
+        <text x="95" y="115" text-anchor="middle" fill="#B9A9D4" font-size="11">user · agent · service</text>
+
+        <line x1="172" y1="101" x2="262" y2="101" stroke="#E8C87A" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="217" y="92" text-anchor="middle" fill="#B9A9D4" font-size="10">requests</text>
+
+        <rect x="270" y="55" width="160" height="92" rx="12" fill="#3D1F7A" stroke="#E8C87A" stroke-width="2"/>
+        <text x="350" y="88" text-anchor="middle" fill="#E8C87A" font-size="14" font-weight="700">Decision point</text>
+        <text x="350" y="108" text-anchor="middle" fill="#F5F0E8" font-size="11">Who are you?</text>
+        <text x="350" y="124" text-anchor="middle" fill="#F5F0E8" font-size="11">What may you do?</text>
+
+        <line x1="432" y1="101" x2="522" y2="101" stroke="#E8C87A" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="477" y="92" text-anchor="middle" fill="#B9A9D4" font-size="10">allow / deny</text>
+
+        <rect x="530" y="70" width="150" height="62" rx="12" fill="#33205A" stroke="#E8C87A" stroke-width="1.5"/>
+        <text x="605" y="95" text-anchor="middle" fill="#F5F0E8" font-size="14" font-weight="700">Resource</text>
+        <text x="605" y="115" text-anchor="middle" fill="#B9A9D4" font-size="11">model · data · API</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#33205A;border:1px solid #E8C87A"></i> Identity and resource each have a name</span>
+      <span><i style="background:#3D1F7A"></i> The decision point is where IAM lives</span>
+    </div>
+  </div>`;
+};
+
+/* --- Identity scope expander --- */
+WIDGETS.identityScope = function(el){
+  const data = [
+    {k:"Human user",d:"Engineers, reviewers, analysts",c:"#3FA07A",base:true},
+    {k:"Service account",d:"Pipelines and automation jobs",c:"#E8C87A"},
+    {k:"AI agent",d:"Tool-calling autonomous workflows",c:"#D4523A"},
+    {k:"Runtime workload",d:"Containers, clusters, endpoints",c:"#9B7BD4"},
+    {k:"Third party",d:"Partner APIs and model vendors",c:"#5FB0C9"},
+  ];
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Interactive</span><h4>Watch identity coverage expand</h4></div>
+    <p class="widget-sub">Traditional IAM covered only the first row. Tap the button to add what AI brings.</p>
+    <div id="scopeRows"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="scopeBtn">Expand to the AI world</button>
+      <button class="btn ghost" id="scopeReset">Reset</button>
+    </div>
+  </div>`;
+  const rows = el.querySelector('#scopeRows');
+  let shown = 1;
+  function draw(){
+    rows.innerHTML = data.map((r,i)=>{
+      const on = i<shown;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin:7px 0;border-radius:11px;
+        border:1px solid ${on?'rgba(232,200,122,.35)':'rgba(255,255,255,.06)'};
+        background:${on?'rgba(255,255,255,.04)':'transparent'};opacity:${on?1:.28};transition:.3s">
+        <span style="width:14px;height:14px;border-radius:4px;background:${r.c};flex:0 0 14px"></span>
+        <div><div style="font-weight:700;font-size:14px">${r.k}${r.base?' <span style="color:#3FA07A;font-size:11px;font-weight:600">· traditional</span>':''}</div>
+        <div style="color:#B9A9D4;font-size:12.5px">${r.d}</div></div>
+      </div>`;
+    }).join("");
+  }
+  draw();
+  el.querySelector('#scopeBtn').addEventListener('click',()=>{ shown=data.length; draw();
+    el.querySelector('#scopeBtn').disabled=true; });
+  el.querySelector('#scopeReset').addEventListener('click',()=>{ shown=1; draw();
+    el.querySelector('#scopeBtn').disabled=false; });
+};
+
+/* --- RBAC vs ABAC --- */
+WIDGETS.rbacAbac = function(el){
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Interactive</span><h4>RBAC vs ABAC, side by side</h4></div>
+    <p class="widget-sub">Pick a person and a situation. See how each model decides.</p>
+    <div class="ctrl-row"><span class="lab">Person</span><div class="chips" id="ra-role"></div></div>
+    <div class="ctrl-row"><span class="lab">Environment</span><div class="chips" id="ra-env"></div></div>
+    <div class="ctrl-row"><span class="lab">Data</span><div class="chips" id="ra-data"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px" id="ra-out"></div>
+  </div>`;
+  const state = {role:"ML engineer", env:"Staging", data:"Public"};
+  const roles=["ML engineer","Data scientist","Auditor"];
+  const envs=["Staging","Production"];
+  const datas=["Public","Restricted"];
+  function chips(id,arr,key){
+    el.querySelector(id).innerHTML = arr.map(v=>`<button class="chip ${state[key]===v?'on':''}" data-v="${v}">${v}</button>`).join("");
+    el.querySelectorAll(id+" .chip").forEach(b=>b.addEventListener('click',()=>{state[key]=b.dataset.v;chips(id,arr,key);decide();}));
+  }
+  function decide(){
+    // RBAC: role only
+    let rbac;
+    if(state.role==="Auditor") rbac={v:"Read-only",ok:true,t:"Auditors can read everywhere, but never change or deploy."};
+    else if(state.role==="ML engineer") rbac={v:"Deploy + read",ok:true,t:"Engineers get deploy rights by role, regardless of the situation."};
+    else rbac={v:"Read + train",ok:true,t:"Data scientists get read and train rights by role, regardless of the situation."};
+
+    // ABAC: context tightens it
+    let abacOk=true, reason=[];
+    if(state.env==="Production") { reason.push("production raises the bar"); }
+    if(state.data==="Restricted") { abacOk=false; reason.push("restricted data needs an approval"); }
+    if(state.role==="Auditor" && state.data==="Restricted"){ abacOk=true; reason=["auditors may read restricted data, read-only"]; }
+    if(state.role==="ML engineer" && state.env==="Production" && state.data==="Restricted"){ abacOk=false; }
+
+    let abac;
+    if(abacOk && reason.length===0) abac={v:"Allowed",ok:true,t:"Low risk context. The role's baseline applies cleanly."};
+    else if(abacOk) abac={v:"Allowed with conditions",ok:true,t:"Allowed, but "+reason.join(" and ")+"."};
+    else abac={v:"Blocked, needs approval",ok:false,t:"Context blocks it: "+reason.join(" and ")+"."};
+
+    el.querySelector('#ra-out').innerHTML = card("RBAC","Role only",rbac)+card("ABAC","Role + context",abac);
+  }
+  function card(name,sub,r){
+    const col = r.ok?'#3FA07A':'#D4523A';
+    return `<div style="border:1px solid ${r.ok?'rgba(63,160,122,.5)':'rgba(212,82,58,.5)'};border-radius:12px;padding:15px 16px;
+      background:${r.ok?'rgba(42,122,94,.1)':'rgba(212,82,58,.1)'}">
+      <div style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#B9A9D4;font-weight:700">${name} · ${sub}</div>
+      <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:${col};margin:5px 0 6px">${r.v}</div>
+      <div style="font-size:12.5px;color:#B9A9D4">${r.t}</div></div>`;
+  }
+  chips('#ra-role',roles,'role'); chips('#ra-env',envs,'env'); chips('#ra-data',datas,'data');
+  decide();
+};
+
+/* --- OAuth flow walkthrough --- */
+WIDGETS.oauthFlow = function(el){
+  const steps = [
+    {t:"You ask the app to do something",d:"You (the resource owner) tell the AI app to read your data from an API. You never type your password into the app."},
+    {t:"The app asks for permission",d:"The client app sends you to the authorization server to approve a specific, scoped request."},
+    {t:"You approve, a token is issued",d:"The authorization server confirms who you are and issues a short-lived access token with a narrow scope."},
+    {t:"The app calls the API with the token",d:"The client presents the token to the resource server, the model or data API."},
+    {t:"The API checks the token, then answers",d:"The resource server validates the token and scope, then returns only what the token allows."},
+  ];
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Step through</span><h4>An OAuth 2.0 access flow</h4></div>
+    <p class="widget-sub">Five steps from request to data. Click to advance.</p>
+    <div id="oauthViz"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" id="oauthNext">Next step</button>
+      <button class="btn ghost" id="oauthBack">Restart</button>
+    </div>
+  </div>`;
+  let s=0;
+  const actors=["You","AI app","Auth server","Model API"];
+  function draw(){
+    const viz = el.querySelector('#oauthViz');
+    const bars = actors.map((a,i)=>{
+      const active = (s===0&&i===0)||(s===1&&i===1)||(s===2&&i===2)||(s===3&&i===1)||(s===4&&i===3);
+      return `<div style="flex:1;text-align:center">
+        <div style="height:46px;display:grid;place-items:center;border-radius:10px;font-size:12px;font-weight:700;
+          background:${active?'#E8C87A':'#33205A'};color:${active?'#1A0A2E':'#B9A9D4'};border:1px solid rgba(232,200,122,.3);transition:.3s">${a}</div>
+      </div>`;
+    }).join('<div style="width:8px"></div>');
+    viz.innerHTML = `<div style="display:flex;align-items:center;margin-bottom:16px">${bars}</div>
+      <div style="border:1px solid rgba(232,200,122,.3);border-radius:12px;padding:16px;background:rgba(255,255,255,.03)">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
+          <span style="width:26px;height:26px;border-radius:8px;background:#E8C87A;color:#1A0A2E;display:grid;place-items:center;font-weight:800;font-size:13px">${s+1}</span>
+          <b style="font-size:15px">${steps[s].t}</b></div>
+        <div style="color:#B9A9D4;font-size:13.5px;padding-left:36px">${steps[s].d}</div>
+      </div>`;
+  }
+  draw();
+  el.querySelector('#oauthNext').addEventListener('click',()=>{ s=Math.min(s+1,steps.length-1); draw(); });
+  el.querySelector('#oauthBack').addEventListener('click',()=>{ s=0; draw(); });
+};
+
+/* --- JIT timeline --- */
+WIDGETS.jitTimeline = function(el){
+  const phases=[
+    {t:"Request",d:"You ask for elevated access to deploy a production model.",c:"#9B7BD4"},
+    {t:"Approve",d:"The model owner reviews the business need and signs off.",c:"#5FB0C9"},
+    {t:"Activate",d:"A one-hour window opens. You have the access you need, and nothing more.",c:"#3FA07A"},
+    {t:"Expire",d:"The window closes automatically. The privilege is gone, no cleanup needed.",c:"#D4523A"},
+  ];
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Interactive</span><h4>The just-in-time lifecycle</h4></div>
+    <p class="widget-sub">Standing access never sleeps. JIT access opens, then closes itself. Step through it.</p>
+    <div id="jitViz"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" id="jitNext">Advance</button>
+      <button class="btn ghost" id="jitReset">Restart</button>
+    </div>
+  </div>`;
+  let p=0;
+  function draw(){
+    const track = phases.map((ph,i)=>{
+      const active=i<=p, now=i===p;
+      return `<div style="flex:1;text-align:center;position:relative">
+        <div style="width:34px;height:34px;border-radius:50%;margin:0 auto;display:grid;place-items:center;font-weight:800;
+          background:${active?ph.c:'#33205A'};color:${active?'#1A0A2E':'#B9A9D4'};
+          box-shadow:${now?'0 0 0 5px rgba(232,200,122,.2)':'none'};transition:.3s;font-size:14px">${i+1}</div>
+        <div style="font-size:12px;margin-top:7px;font-weight:700;color:${active?'#F5F0E8':'#B9A9D4'}">${ph.t}</div>
+      </div>`;
+    }).join(`<div style="flex:0 0 30px;height:2px;background:rgba(232,200,122,.25);margin-top:16px"></div>`);
+    el.querySelector('#jitViz').innerHTML = `<div style="display:flex;align-items:flex-start;margin-bottom:16px">${track}</div>
+      <div style="border-left:3px solid ${phases[p].c};padding:12px 16px;background:rgba(255,255,255,.03);border-radius:0 10px 10px 0">
+        <b style="font-size:15px;color:${phases[p].c}">${phases[p].t}</b>
+        <div style="color:#B9A9D4;font-size:13.5px;margin-top:3px">${phases[p].d}</div></div>`;
+  }
+  draw();
+  el.querySelector('#jitNext').addEventListener('click',()=>{ p=Math.min(p+1,phases.length-1); draw(); });
+  el.querySelector('#jitReset').addEventListener('click',()=>{ p=0; draw(); });
+};
+
+/* --- Zero Trust simulator (centerpiece) --- */
+WIDGETS.zeroTrustSim = function(el){
+  const state = {ident:"Verified", device:"Managed", sens:"Standard", loc:"Usual", intent:"Infer"};
+  const opts = {
+    ident:["Verified","Unverified"],
+    device:["Managed","Unmanaged"],
+    sens:["Standard","Restricted"],
+    loc:["Usual","Unusual"],
+    intent:["Infer","Export"]
+  };
+  const labels = {ident:"Identity",device:"Device",sens:"Resource",loc:"Location",intent:"Intent"};
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Simulator</span><h4>Make the access decision yourself</h4></div>
+    <p class="widget-sub">This is Zero Trust in action. Every signal feeds one verdict: allow, step up, or deny. Change the inputs and watch it move.</p>
+    <div id="ztControls"></div>
+    <div id="ztVerdict" style="margin-top:18px"></div>
+  </div>`;
+  function controls(){
+    el.querySelector('#ztControls').innerHTML = Object.keys(opts).map(k=>
+      `<div class="ctrl-row"><span class="lab">${labels[k]}</span><div class="chips" data-k="${k}">
+        ${opts[k].map(v=>`<button class="chip ${state[k]===v?'on':''}" data-v="${v}">${v}</button>`).join("")}
+      </div></div>`).join("");
+    el.querySelectorAll('#ztControls .chips').forEach(g=>{
+      g.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
+        state[g.dataset.k]=b.dataset.v; controls(); decide();
+      }));
+    });
+  }
+  function decide(){
+    let risk=0; const reasons=[];
+    if(state.ident==="Unverified"){ risk+=4; reasons.push("the identity is not verified"); }
+    if(state.device==="Unmanaged"){ risk+=2; reasons.push("the device is unmanaged"); }
+    if(state.sens==="Restricted"){ risk+=2; reasons.push("the resource is restricted"); }
+    if(state.loc==="Unusual"){ risk+=2; reasons.push("the login location is unusual"); }
+    if(state.intent==="Export"){ risk+=2; reasons.push("the intent is export, not just inference"); }
+
+    let v;
+    if(state.ident==="Unverified" || risk>=7){
+      v={cls:"v-deny",ico:"&times;",h:"Deny",
+        p:"Too much risk to allow. "+(state.ident==="Unverified"?"Identity cannot be verified, which is non-negotiable under Zero Trust. ":"")+
+          "Reasons: "+reasons.join(", ")+"."};
+    } else if(risk>=3){
+      v={cls:"v-step",ico:"&#8593;",h:"Step up",
+        p:"Allowed, but not on trust alone. The system asks for stronger proof or an approval first, because "+reasons.join(", ")+"."};
+    } else if(risk>0){
+      v={cls:"v-allow",ico:"&#10003;",h:"Allow, with monitoring",
+        p:"Low risk, so access is granted, with extra logging because "+reasons.join(", ")+"."};
+    } else {
+      v={cls:"v-allow",ico:"&#10003;",h:"Allow",
+        p:"Every signal is healthy. Verified identity, managed device, standard resource, usual location, and a low-risk intent. Access is granted."};
+    }
+    el.querySelector('#ztVerdict').innerHTML =
+      `<div class="verdict ${v.cls}"><div class="v-ico">${v.ico}</div>
+        <div><h5>${v.h}</h5><p>${v.p}</p></div></div>
+       <div style="margin-top:10px;font-size:12px;color:#B9A9D4">Risk signals counted: <b style="color:#E8C87A">${risk}</b>. Notice that an unverified identity alone is enough to deny, no matter how good the other signals look. That is "verify explicitly" in practice.</div>`;
+  }
+  controls(); decide();
+};
+
+/* --- Trust boundaries --- */
+WIDGETS.trustBoundaries = function(el){
+  const zones = {
+    identity:{name:"Identity zone",d:"Where subjects are verified. Authentication and assurance live here.",c:"#9B7BD4"},
+    data:{name:"Data zone",d:"Where information is protected. Classification and access rules apply.",c:"#5FB0C9"},
+    model:{name:"Model zone",d:"Where AI behavior is controlled. Model-level authorization happens here.",c:"#E8C87A"},
+    tool:{name:"Tool zone",d:"Where actions get executed. Delegation and scope are the focus.",c:"#D4523A"},
+  };
+  el.innerHTML = `<div class="widget">
+    <div class="widget-h"><span class="badge">Interactive</span><h4>The four trust zones</h4></div>
+    <p class="widget-sub">Each zone is a different responsibility. The crossings between them are where you check identity. Tap a zone.</p>
+    <svg viewBox="0 0 700 240" style="width:100%;height:auto;cursor:pointer">
+      <g id="z-identity">
+        <rect x="20" y="90" width="140" height="60" rx="12" fill="#33205A" stroke="#9B7BD4" stroke-width="2"/>
+        <text x="90" y="118" text-anchor="middle" fill="#F5F0E8" font-size="13" font-weight="700">Identity</text>
+        <text x="90" y="135" text-anchor="middle" fill="#B9A9D4" font-size="10">user · agent</text>
+      </g>
+      <g id="z-data">
+        <rect x="200" y="20" width="140" height="60" rx="12" fill="#33205A" stroke="#5FB0C9" stroke-width="2"/>
+        <text x="270" y="48" text-anchor="middle" fill="#F5F0E8" font-size="13" font-weight="700">Data</text>
+        <text x="270" y="65" text-anchor="middle" fill="#B9A9D4" font-size="10">datasets · vectors</text>
+      </g>
+      <g id="z-model">
+        <rect x="200" y="160" width="140" height="60" rx="12" fill="#33205A" stroke="#E8C87A" stroke-width="2"/>
+        <text x="270" y="188" text-anchor="middle" fill="#F5F0E8" font-size="13" font-weight="700">Model</text>
+        <text x="270" y="205" text-anchor="middle" fill="#B9A9D4" font-size="10">train · inference</text>
+      </g>
+      <g id="z-tool">
+        <rect x="380" y="90" width="140" height="60" rx="12" fill="#33205A" stroke="#D4523A" stroke-width="2"/>
+        <text x="450" y="118" text-anchor="middle" fill="#F5F0E8" font-size="13" font-weight="700">Tool</text>
+        <text x="450" y="135" text-anchor="middle" fill="#B9A9D4" font-size="10">external APIs</text>
+      </g>
+      <line x1="160" y1="115" x2="200" y2="60" stroke="#E8C87A" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <line x1="160" y1="125" x2="200" y2="185" stroke="#E8C87A" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <line x1="340" y1="55" x2="380" y2="110" stroke="#E8C87A" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <line x1="340" y1="190" x2="380" y2="130" stroke="#E8C87A" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text x="600" y="120" text-anchor="middle" fill="#B9A9D4" font-size="11">dashed lines =</text>
+      <text x="600" y="136" text-anchor="middle" fill="#B9A9D4" font-size="11">boundary crossings</text>
+    </svg>
+    <div id="tbInfo" style="border:1px solid rgba(232,200,122,.3);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.03);margin-top:6px">
+      <b style="color:#E8C87A">Tap a zone above</b>
+      <div style="color:#B9A9D4;font-size:13px;margin-top:4px">Each crossing, a user calling a model, a pipeline reading data, an agent invoking a tool, is a checkpoint where identity and policy get verified.</div>
+    </div>
+  </div>`;
+  Object.keys(zones).forEach(z=>{
+    const g = el.querySelector('#z-'+z);
+    g.addEventListener('click',()=>{
+      const zz=zones[z];
+      el.querySelector('#tbInfo').innerHTML = `<b style="color:${zz.c}">${zz.name}</b>
+        <div style="color:#B9A9D4;font-size:13px;margin-top:4px">${zz.d}</div>`;
+    });
+  });
+};
+
+/* ----------------------------------------------------------
+   GLOSSARY
+----------------------------------------------------------- */
+function buildGlossary(){
+  document.getElementById('glossList').innerHTML = GLOSSARY.map(([t,d])=>
+    `<div class="gterm"><dt>${t}</dt><dd>${d}</dd></div>`).join("");
+}
+document.getElementById('glossBtn').addEventListener('click',()=>document.getElementById('glossModal').classList.add('show'));
+document.getElementById('glossX').addEventListener('click',()=>document.getElementById('glossModal').classList.remove('show'));
+document.getElementById('glossModal').addEventListener('click',e=>{
+  if(e.target.id==='glossModal') document.getElementById('glossModal').classList.remove('show');
+});
+
+/* mobile */
+function closeMobile(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('scrim').classList.remove('show'); }
+document.getElementById('menuBtn').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('scrim').classList.toggle('show');
+});
+document.getElementById('scrim').addEventListener('click',closeMobile);
+
+/* boot */
+buildNav();
+buildGlossary();
+document.getElementById('mod-0').classList.add('open');
+go(0,0);
+</script>
+</body>
+</html>
